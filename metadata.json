@@ -1,0 +1,8 @@
+{
+  "name": "CGEC Campus Voice - Secure Student Grievance & Ideas Portal",
+  "description": "An ultra-secure, interactive campus voice and grievance redressal platform for Cooch Behar Government Engineering College (CGEC) with dual Bengali/English language support, live tracking, and role-locked admin vault.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
