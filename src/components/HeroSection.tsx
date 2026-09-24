@@ -106,18 +106,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       {/* Main Interactive Glowing Tab Selector Buttons */}
       <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
         <button
-          onClick={() => onSelectTab('browse')}
-          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center gap-2.5 ${
-            activeTab === 'browse'
-              ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-slate-950 shadow-[0_0_30px_rgba(249,115,22,0.6)] scale-105'
-              : 'bg-slate-950/80 border border-orange-500/30 text-slate-200 hover:text-white hover:border-orange-500/60 hover:shadow-[0_0_20px_rgba(249,115,22,0.2)]'
-          }`}
-        >
-          <MessageSquare className="w-4 h-4" />
-          <span>{lang === 'bn' ? 'পাবলিক ভয়েস দেখুন' : 'Explore Public Voices'}</span>
-        </button>
-
-        <button
           onClick={() => onSelectTab('submit')}
           className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center gap-2.5 ${
             activeTab === 'submit'
@@ -130,6 +118,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </button>
 
         <button
+          onClick={() => onSelectTab('browse')}
+          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center gap-2.5 ${
+            activeTab === 'browse'
+              ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-slate-950 shadow-[0_0_30px_rgba(249,115,22,0.6)] scale-105'
+              : 'bg-slate-950/80 border border-orange-500/30 text-slate-200 hover:text-white hover:border-orange-500/60 hover:shadow-[0_0_20px_rgba(249,115,22,0.2)]'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          <span>{lang === 'bn' ? 'পাবলিক ভয়েস দেখুন' : 'Explore Public Voices'}</span>
+        </button>
+
+        <button
           onClick={() => onSelectTab('track')}
           className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center gap-2.5 ${
             activeTab === 'track'
@@ -138,7 +138,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           }`}
         >
           <Search className="w-4 h-4" />
-          <span>{lang === 'bn' ? 'স্ট্যাটাস ট্র্যাক করুন' : 'Track by Code'}</span>
+          <span>{lang === 'bn' ? 'স্ট্যাটাস ট্রেস করুন' : 'Trace by Code'}</span>
         </button>
       </div>
 

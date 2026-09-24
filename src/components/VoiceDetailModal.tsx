@@ -214,11 +214,11 @@ export const VoiceDetailModal: React.FC<VoiceDetailModalProps> = ({
           </div>
         )}
 
-        {/* Detailed Message with Privacy Protection */}
+        {/* Detailed Message - Fully Visible */}
         <div className="space-y-2 mb-5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-orange-300/80 uppercase tracking-wider">
-              Voice Description
+              {lang === 'bn' ? 'সমস্যার বিস্তারিত বিবরণ' : 'Voice Description'}
             </span>
             {isAdmin && (
               <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
@@ -228,34 +228,9 @@ export const VoiceDetailModal: React.FC<VoiceDetailModalProps> = ({
             )}
           </div>
 
-          {isAdmin ? (
-            <div className="p-4 rounded-2xl bg-slate-950 border border-emerald-500/30 text-sm text-slate-200 leading-relaxed whitespace-pre-wrap shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-              {voice.content.message}
-            </div>
-          ) : (
-            <div className="relative overflow-hidden rounded-2xl bg-black/60 border border-orange-500/30 p-5 shadow-[0_0_20px_rgba(0,0,0,0.6)]">
-              {/* Blurred Message */}
-              <div className="text-sm text-slate-300 select-none filter blur-[5px] opacity-60 leading-relaxed whitespace-pre-wrap pointer-events-none min-h-[60px]">
-                {voice.content.message}
-              </div>
-
-              {/* Glowing Privacy Protection Callout Overlay */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-b from-black/85 via-black/80 to-black/90 backdrop-blur-[3px] text-center">
-                <div className="w-9 h-9 rounded-xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400 mb-2 shadow-[0_0_15px_rgba(249,115,22,0.4)]">
-                  <Lock className="w-5 h-5 text-orange-400" />
-                </div>
-                <h5 className="text-xs sm:text-sm font-black text-orange-300 tracking-wide uppercase">
-                  Protected for Student Privacy & Anti-Spam
-                </h5>
-                <p className="text-[11px] text-slate-300 max-w-sm mt-0.5">
-                  Content is shielded to protect identities. To inspect full grievance details, please connect directly with administration:
-                </p>
-                <div className="mt-2 text-[11px] font-bold text-amber-400 bg-amber-950/40 border border-amber-500/30 px-3 py-1 rounded-xl">
-                  Visible to connect Admin
-                </div>
-              </div>
-            </div>
-          )}
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-950 border border-orange-500/30 text-sm text-slate-200 leading-relaxed whitespace-pre-wrap shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            {voice.content.message}
+          </div>
         </div>
 
         {/* If not Admin, show Direct Admin Connect Desk */}

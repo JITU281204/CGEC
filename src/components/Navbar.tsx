@@ -74,18 +74,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         {activeView === 'student' && (
           <nav className="hidden md:flex items-center gap-1.5 bg-slate-950/80 border border-orange-500/25 p-1 rounded-2xl shadow-[0_0_25px_rgba(249,115,22,0.12)]">
             <button
-              onClick={() => onSelectTab('browse')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                studentTab === 'browse'
-                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 shadow-[0_0_20px_rgba(249,115,22,0.55)] scale-105'
-                  : 'text-slate-300 hover:text-orange-300 hover:bg-orange-500/10'
-              }`}
-            >
-              <List className="w-3.5 h-3.5" />
-              <span>{lang === 'bn' ? 'সকল ভয়েস' : 'Explore Voices'}</span>
-            </button>
-
-            <button
               onClick={() => onSelectTab('submit')}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
                 studentTab === 'submit'
@@ -98,6 +86,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             <button
+              onClick={() => onSelectTab('browse')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                studentTab === 'browse'
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 shadow-[0_0_20px_rgba(249,115,22,0.55)] scale-105'
+                  : 'text-slate-300 hover:text-orange-300 hover:bg-orange-500/10'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>{lang === 'bn' ? 'সকল ভয়েস' : 'Explore Public Voices'}</span>
+            </button>
+
+            <button
               onClick={() => onSelectTab('track')}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
                 studentTab === 'track'
@@ -106,7 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Search className="w-3.5 h-3.5" />
-              <span>{lang === 'bn' ? 'ট্র্যাক করুন' : 'Track Status'}</span>
+              <span>{lang === 'bn' ? 'স্ট্যাটাস ট্রেস করুন' : 'Trace by Code'}</span>
             </button>
           </nav>
         )}

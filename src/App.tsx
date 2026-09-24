@@ -20,7 +20,7 @@ export default function App() {
   const [voices, setVoices] = useState<VoiceRecord[]>([]);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [activeView, setActiveView] = useState<'student' | 'admin'>('student');
-  const [studentTab, setStudentTab] = useState<'browse' | 'submit' | 'track'>('browse');
+  const [studentTab, setStudentTab] = useState<'submit' | 'browse' | 'track'>('submit');
 
   // Modals & Inspection
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState<boolean>(false);
@@ -150,7 +150,16 @@ export default function App() {
             onSelectTab={setStudentTab}
           />
 
-          {/* Tab 1: Explore Public Voices */}
+          {/* Tab 1: Speak Up / Submit Issue */}
+          {studentTab === 'submit' && (
+            <StudentVoiceForm
+              lang={lang}
+              onVoiceSubmitted={handleVoiceSubmitted}
+              onShowToast={showToast}
+            />
+          )}
+
+          {/* Tab 2: Explore Public Voices */}
           {studentTab === 'browse' && (
             <PublicVoiceFeed
               voices={voices}
@@ -162,16 +171,7 @@ export default function App() {
             />
           )}
 
-          {/* Tab 2: Speak Up / Submit Issue */}
-          {studentTab === 'submit' && (
-            <StudentVoiceForm
-              lang={lang}
-              onVoiceSubmitted={handleVoiceSubmitted}
-              onShowToast={showToast}
-            />
-          )}
-
-          {/* Tab 3: Track by ID */}
+          {/* Tab 3: Trace by Code */}
           {studentTab === 'track' && (
             <TrackSection
               lang={lang}

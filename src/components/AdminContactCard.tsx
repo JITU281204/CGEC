@@ -33,8 +33,8 @@ export const AdminContactCard: React.FC<AdminContactCardProps> = ({
     <div className={`rounded-2xl border border-orange-500/40 bg-gradient-to-b from-[#180e07] via-[#0F0C12] to-[#0A070E] shadow-[0_0_35px_rgba(249,115,22,0.18)] ${compact ? 'p-4' : 'p-5 sm:p-6'}`}>
       
       {/* Header */}
-      <div className="flex items-center gap-2.5 mb-3">
-        <div className="w-8 h-8 rounded-xl bg-orange-500/20 border border-orange-500/50 flex items-center justify-center text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)]">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-8 h-8 rounded-xl bg-orange-500/20 border border-orange-500/50 flex items-center justify-center text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)] shrink-0 mt-0.5">
           <ShieldCheck className="w-4 h-4 text-orange-400" />
         </div>
         <div>
@@ -43,7 +43,7 @@ export const AdminContactCard: React.FC<AdminContactCardProps> = ({
             <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400 shrink-0" />
           </h4>
           {subtitle && (
-            <p className="text-[11px] text-orange-200/70 leading-tight mt-0.5">
+            <p className="text-[11px] text-orange-200/70 leading-relaxed mt-0.5">
               {subtitle}
             </p>
           )}
@@ -55,52 +55,55 @@ export const AdminContactCard: React.FC<AdminContactCardProps> = ({
         {ADMIN_CONTACTS.map((adm, idx) => (
           <div
             key={idx}
-            className="p-3 rounded-xl bg-black/60 border border-orange-500/30 hover:border-orange-500/60 transition-all group"
+            className="p-3.5 rounded-xl bg-black/60 border border-orange-500/30 hover:border-orange-500/60 transition-all group flex flex-col justify-between"
           >
-            <div className="flex items-center justify-between mb-1.5">
-              <div>
-                <span className="text-xs font-black text-orange-300 block group-hover:text-white transition-colors">
-                  {adm.name}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  {adm.title}
+            <div>
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div>
+                  <span className="text-xs font-black text-orange-300 block group-hover:text-white transition-colors">
+                    {adm.name}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium block">
+                    {adm.title}
+                  </span>
+                </div>
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 font-bold uppercase tracking-wider shrink-0">
+                  Admin
                 </span>
               </div>
-              <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30 font-bold uppercase">
-                Admin
-              </span>
+
+              {/* Email */}
+              <div className="pt-2 border-t border-orange-500/15">
+                <a
+                  href={`mailto:${adm.email}`}
+                  className="flex items-center gap-2 text-slate-300 hover:text-orange-300 transition-colors truncate text-xs"
+                >
+                  <Mail className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                  <span className="font-mono text-[11px] truncate">{adm.email}</span>
+                </a>
+              </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="space-y-1.5 pt-1.5 border-t border-orange-500/15 text-xs">
+            {/* Quick Actions with unbroken phone & Chat button */}
+            <div className="pt-2 mt-2 border-t border-orange-500/15 flex items-center justify-between gap-2">
               <a
-                href={`mailto:${adm.email}`}
-                className="flex items-center gap-2 text-slate-300 hover:text-orange-300 transition-colors truncate"
+                href={`tel:${adm.phone}`}
+                className="flex items-center gap-1.5 text-slate-200 hover:text-amber-300 transition-colors shrink-0"
               >
-                <Mail className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-                <span className="font-mono text-[11px] truncate">{adm.email}</span>
+                <Phone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="font-mono text-xs font-bold whitespace-nowrap">{adm.phoneDisplay}</span>
               </a>
 
-              <div className="flex items-center justify-between gap-2">
-                <a
-                  href={`tel:${adm.phone}`}
-                  className="flex items-center gap-2 text-slate-300 hover:text-amber-300 transition-colors"
-                >
-                  <Phone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="font-mono text-[11px] font-semibold">{adm.phoneDisplay}</span>
-                </a>
-
-                <a
-                  href={`https://wa.me/91${adm.phone}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Chat on WhatsApp"
-                  className="px-2 py-0.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold flex items-center gap-1 transition-all"
-                >
-                  <MessageCircle className="w-3 h-3 text-emerald-400" />
-                  <span>Chat</span>
-                </a>
-              </div>
+              <a
+                href={`https://wa.me/91${adm.phone}`}
+                target="_blank"
+                rel="noreferrer"
+                title="Chat on WhatsApp"
+                className="px-2 py-0.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold flex items-center gap-1 transition-all shrink-0"
+              >
+                <MessageCircle className="w-3 h-3 text-emerald-400" />
+                <span>Chat</span>
+              </a>
             </div>
           </div>
         ))}

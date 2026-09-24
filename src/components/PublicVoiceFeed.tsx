@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ThumbsUp, MessageSquare, Check, Share2, Flame, Shield, ShieldCheck, ArrowUpRight, Lock, Eye, Mail, Phone, X } from 'lucide-react';
+import { Search, ThumbsUp, MessageSquare, Check, Share2, Flame, Shield, ShieldCheck, ArrowUpRight, Lock, Eye, Mail, Phone, X, ExternalLink, Globe, MessageCircle } from 'lucide-react';
 import { VoiceRecord } from '../types';
 import { upvoteVoice, isVoiceUpvotedByUser } from '../utils/storage';
 import { AppLanguage, translations } from '../utils/translations';
@@ -67,15 +67,21 @@ export const PublicVoiceFeed: React.FC<PublicVoiceFeedProps> = ({
   return (
     <section className="relative z-10 py-6 max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
       
-      {/* Top Privacy & Content Protection Banner */}
+      {/* Top Banner: Top 10 Recommended Voices Active */}
       <div className="p-4 rounded-2xl border border-orange-500/30 bg-gradient-to-r from-orange-950/40 via-[#0F0C12] to-orange-950/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_25px_rgba(249,115,22,0.12)]">
         <div className="flex items-start sm:items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400 shrink-0 mt-0.5 sm:mt-0">
-            <Shield className="w-4 h-4" />
+            <Flame className="w-4 h-4 fill-orange-400" />
           </div>
           <div className="text-xs text-slate-300">
-            <span className="font-bold text-orange-300 block sm:inline">Student Privacy & Spam Protection: </span>
-            <span>Raw descriptions are protected with privacy blur. Authorized committee and administrators have clearance to review.</span>
+            <span className="font-bold text-orange-300 block sm:inline">
+              {lang === 'bn' ? 'শীর্ষ ১০টি রিকমেন্ডেড সমস্যা দৃশ্যমান: ' : 'Top 10 Recommended Problems Visible: '}
+            </span>
+            <span>
+              {lang === 'bn'
+                ? 'শিক্ষার্থীদের সুবিধার জন্য শীর্ষ ১০টি সমস্যা সম্পূর্ণ দৃশ্যমান রাখা হয়েছে। বাকি সমস্ত সমস্যা প্রটেকশনের জন্য আর্কাইভে হাইড (সংরক্ষিত) রয়েছে।'
+                : 'Top 10 recommended campus issues are clearly visible for student review & upvotes. All other historical submissions remain securely hidden in the admin vault.'}
+            </span>
           </div>
         </div>
 
@@ -218,45 +224,30 @@ export const PublicVoiceFeed: React.FC<PublicVoiceFeedProps> = ({
                     <ArrowUpRight className="w-4 h-4 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   </h4>
 
-                  {/* Description preview with Privacy Protection Blur */}
-                  <div className="relative mt-1">
-                    {isAdmin ? (
-                      <div>
-                        <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 mb-1">
-                          <Eye className="w-3 h-3" />
-                          <span>Admin Full Clearance View</span>
-                        </div>
-                        <p className="text-xs sm:text-sm text-slate-300 line-clamp-3 leading-relaxed">
-                          {item.content.message}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="relative overflow-hidden rounded-xl bg-black/40 border border-orange-500/20 p-2.5">
-                        {/* Blurred Text */}
-                        <p className="text-xs sm:text-sm text-slate-300 select-none filter blur-[4.5px] opacity-70 leading-relaxed pointer-events-none">
-                          {item.content.message}
-                        </p>
-
-                        {/* Centered Privacy Badge */}
-                        <div className="absolute inset-0 flex items-center justify-between px-3 bg-gradient-to-r from-black/85 via-black/75 to-black/85 backdrop-blur-[2px]">
-                          <div className="flex items-center gap-1.5 text-[11px] font-black text-orange-300">
-                            <Lock className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-                            <span>Visible to connect Admin</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowContactsModal(true);
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-orange-500/30 hover:bg-orange-500 border border-orange-500/60 hover:text-slate-950 text-orange-200 text-[10px] font-bold transition-all shadow-sm flex items-center gap-1 shrink-0"
-                          >
-                            <Phone className="w-3 h-3" />
-                            <span>Admin Contacts</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                  {/* Description preview - Fully Visible for Top 10 Recommended Voices */}
+                  <div className="mt-1">
+                    <p className="text-xs sm:text-sm text-slate-300 line-clamp-3 leading-relaxed">
+                      {item.content.message}
+                    </p>
+                    
+                    {/* Student Identity Note */}
+                    <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-400">
+                      {item.studentDetails.isAnonymous ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700/80 text-slate-300 font-medium">
+                          <Shield className="w-3 h-3 text-orange-400" />
+                          <span>{lang === 'bn' ? 'বেনামী শিক্ষার্থী' : 'Anonymous Student'}</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-slate-400 font-medium">
+                          <span>{lang === 'bn' ? 'লেখক:' : 'By:'}</span>
+                          <span className="text-orange-200 font-semibold">{item.studentDetails.name}</span>
+                        </span>
+                      )}
+                      <span className="text-slate-600">•</span>
+                      <span className="text-slate-500 font-mono text-[10px]">
+                        {lang === 'bn' ? 'পাবলিক রিকমেন্ডেশন' : 'Public Recommendation'}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Official Action Note Preview */}
@@ -379,32 +370,119 @@ export const PublicVoiceFeed: React.FC<PublicVoiceFeedProps> = ({
         </div>
       )}
 
-      {/* Admin Contacts Modal */}
+      {/* Official Admin Contacts Desk Modal */}
       {showContactsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-lg rounded-3xl border border-orange-500/50 bg-[#0F0C12] p-6 shadow-[0_0_60px_rgba(249,115,22,0.35)] overflow-hidden">
-            {/* Top glowing orange line */}
+          <div className="relative w-full max-w-2xl rounded-3xl border border-orange-500/40 bg-gradient-to-b from-[#180e07] via-[#0F0C12] to-[#0A070E] p-6 sm:p-7 shadow-[0_0_60px_rgba(249,115,22,0.35)] overflow-hidden">
+            {/* Top radiant glowing edge */}
             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-[0_0_20px_rgba(249,115,22,0.8)]" />
 
-            {/* Close button */}
-            <button
-              type="button"
-              onClick={() => setShowContactsModal(false)}
-              className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {/* Header with Title and Close 'X' Button */}
+            <div className="flex items-start justify-between gap-4 mb-5 pb-4 border-b border-orange-500/20">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.35)] shrink-0 mt-0.5">
+                  <ShieldCheck className="w-5 h-5 text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-white flex items-center gap-2">
+                    <span>Official Admin Contact Desk</span>
+                    <Flame className="w-4 h-4 text-orange-400 fill-orange-400 shrink-0" />
+                  </h3>
+                  <p className="text-xs text-orange-200/80 leading-relaxed mt-1 max-w-lg">
+                    Connect directly with verified CGEC administrators to discuss sensitive matters, request grievance unblur clearance, or resolve spam.
+                  </p>
+                </div>
+              </div>
 
-            <AdminContactCard
-              title="Official Admin Contact Desk"
-              subtitle="Connect directly with verified CGEC administrators to discuss sensitive matters, request unblur clearance, or resolve spam."
-            />
-
-            <div className="mt-4 pt-3 border-t border-orange-500/20 flex justify-end">
               <button
                 type="button"
                 onClick={() => setShowContactsModal(false)}
-                className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-950 font-black text-xs transition-colors cursor-pointer shadow-sm"
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700 transition-all cursor-pointer shrink-0"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Two Admin Cards Grid - Wide, Beautiful, and Unbroken Numbers */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+              {ADMIN_CONTACTS.map((adm, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 rounded-2xl bg-black/75 border border-orange-500/30 hover:border-orange-500/60 transition-all group flex flex-col justify-between shadow-[0_0_20px_rgba(0,0,0,0.5)]"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <span className="text-sm font-black text-white group-hover:text-orange-300 transition-colors block">
+                          {adm.name}
+                        </span>
+                        <span className="text-[11px] text-slate-400 font-medium block">
+                          {adm.title}
+                        </span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/40 font-bold uppercase tracking-wider shrink-0">
+                        ADMIN
+                      </span>
+                    </div>
+
+                    {/* Email */}
+                    <div className="pt-2 border-t border-orange-500/15">
+                      <a
+                        href={`mailto:${adm.email}`}
+                        className="flex items-center gap-2 text-slate-300 hover:text-orange-300 transition-colors text-xs truncate"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                        <span className="font-mono text-xs truncate">{adm.email}</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Phone & Chat Row with whitespace-nowrap */}
+                  <div className="pt-2.5 mt-2 border-t border-orange-500/15 flex items-center justify-between gap-2">
+                    <a
+                      href={`tel:${adm.phone}`}
+                      className="flex items-center gap-1.5 text-slate-200 hover:text-amber-300 transition-colors shrink-0"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span className="font-mono text-xs font-bold whitespace-nowrap">{adm.phoneDisplay}</span>
+                    </a>
+
+                    <a
+                      href={`https://wa.me/91${adm.phone}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Chat on WhatsApp"
+                      className="px-2.5 py-1 rounded-xl bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:scale-105 shrink-0"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Chat</span>
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom Footer Bar */}
+            <div className="pt-4 border-t border-orange-500/20 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-orange-200/80 font-medium">Cooch Behar Govt. Engineering College:</span>
+                <a
+                  href="https://cgec.org.in/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/30 text-orange-300 hover:text-white font-bold text-xs transition-all"
+                >
+                  <Globe className="w-3.5 h-3.5 text-orange-400" />
+                  <span>cgec.org.in</span>
+                  <ExternalLink className="w-3 h-3 text-orange-400" />
+                </a>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowContactsModal(false)}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 text-xs font-black transition-all cursor-pointer shadow-[0_0_15px_rgba(249,115,22,0.4)]"
               >
                 Close Window
               </button>
