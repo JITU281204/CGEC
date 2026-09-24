@@ -1,172 +1,147 @@
-import React, { useState } from 'react';
-import {
-  Shield,
-  Send,
-  ListFilter,
-  GraduationCap,
-  CheckCircle2,
-  Search,
-  Sparkles,
-  ArrowRight,
-  Radio
-} from 'lucide-react';
+import React from 'react';
+import { Send, Search, MessageSquare, Sparkles, Flame, CheckCircle2, RotateCw, ExternalLink } from 'lucide-react';
 import { VoiceRecord } from '../types';
-import { AppLanguage, translations } from '../utils/translations';
-import { cyberSound } from '../utils/audio';
+import { AppLanguage } from '../utils/translations';
 
 interface HeroSectionProps {
   voices: VoiceRecord[];
   lang?: AppLanguage;
-  onScrollToForm: () => void;
-  onScrollToFeed: () => void;
-  onQuickTrack: (code: string) => void;
+  activeTab: 'browse' | 'submit' | 'track';
+  onSelectTab: (tab: 'browse' | 'submit' | 'track') => void;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
   voices,
   lang = 'en',
-  onScrollToForm,
-  onScrollToFeed,
-  onQuickTrack,
+  activeTab,
+  onSelectTab,
 }) => {
-  const [heroTrackCode, setHeroTrackCode] = useState<string>('');
-  const t = translations[lang];
-
   const total = voices.length;
+  const inProgress = voices.filter((v) => v.metadata.status === 'In Progress').length;
   const resolved = voices.filter((v) => v.metadata.status === 'Resolved').length;
 
-  const handleHeroTrackSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!heroTrackCode.trim()) return;
-    cyberSound.playClick();
-    onQuickTrack(heroTrackCode.trim());
-    setHeroTrackCode('');
-  };
-
   return (
-    <section className="relative z-10 py-8 lg:py-14 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="grid lg:grid-cols-12 gap-10 items-center">
-        
-        {/* Left Col: Main Banner copy */}
-        <div className="lg:col-span-7 space-y-6 text-left">
-          
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold">
-              <Shield className="w-3.5 h-3.5 text-cyan-400" />
-              <span>{t.heroBadge}</span>
-            </div>
+    <section className="relative z-10 pt-10 pb-8 max-w-5xl mx-auto px-4 sm:px-6 text-center">
+      
+      {/* Radiant Glowing Pulsing Pill with link to official college portal */}
+      <a
+        href="https://cgec.org.in/"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Visit Official CGEC Portal (https://cgec.org.in)"
+        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-orange-500/15 via-amber-500/20 to-orange-500/15 border border-orange-500/40 text-orange-300 hover:text-white text-xs font-bold tracking-wide mb-5 shadow-[0_0_25px_rgba(249,115,22,0.3)] hover:border-orange-500/80 hover:shadow-[0_0_35px_rgba(249,115,22,0.5)] transition-all cursor-pointer group"
+      >
+        <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400 group-hover:scale-110 transition-transform" />
+        <span>Cooch Behar Government Engineering College</span>
+        <span className="text-orange-500">•</span>
+        <span className="text-amber-200 flex items-center gap-1">
+          <span>cgec.org.in</span>
+          <ExternalLink className="w-3 h-3 text-orange-400 group-hover:text-amber-300" />
+        </span>
+      </a>
 
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-slate-300 text-[11px] font-mono">
-              <Radio className="w-2.5 h-2.5 text-emerald-400 animate-pulse" />
-              <span>{t.academicSession}</span>
-            </div>
-          </div>
-
-          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.2] text-white">
-            {t.heroTitle1} <br />
-            <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
-              {t.heroTitle2}
+      {/* Fiery High-Voltage Headline */}
+      <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight max-w-3xl mx-auto">
+        {lang === 'bn' ? (
+          <>
+            আপনার ভয়েস, আপনার ক্যাম্পাস,{' '}
+            <span className="bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(249,115,22,0.6)]">
+              সরাসরি সমাধান।
             </span>
-          </h2>
+          </>
+        ) : (
+          <>
+            Make Your Voice Heard.{' '}
+            <span className="bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(249,115,22,0.6)]">
+              Ignite Real Change.
+            </span>
+          </>
+        )}
+      </h2>
 
-          <p className="text-slate-300 text-sm sm:text-base max-w-2xl leading-relaxed">
-            {t.heroDesc}
-          </p>
+      {/* Subtitle with high contrast and clarity */}
+      <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto mt-4 leading-relaxed font-medium">
+        {lang === 'bn'
+          ? 'ল্যাব, হস্টেল, ওয়াই-ফাই, লাইব্রেরি বা ক্লাস সংক্রান্ত যেকোনো সমস্যা বা নতুন আইডিয়া জানান। কলেজ প্রশাসন সরাসরি পর্যালোচনা করবে।'
+          : 'Express academic hurdles, hostel facilities, lab upgrades, or innovative proposals directly to CGEC Administration. Track live resolutions transparently.'}
+      </p>
 
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-3.5 pt-1">
-            <button
-              onClick={() => {
-                cyberSound.playClick();
-                onScrollToForm();
-              }}
-              className="bg-gradient-to-r from-cyan-500 via-indigo-600 to-teal-500 hover:opacity-95 text-white font-bold px-6 py-3.5 rounded-2xl shadow-xl shadow-cyan-500/25 flex items-center gap-2 text-xs sm:text-sm transition-all cursor-pointer active:scale-95"
-            >
-              <Send className="w-4 h-4" />
-              <span>{t.submitVoiceBtn}</span>
-            </button>
-
-            <button
-              onClick={() => {
-                cyberSound.playClick();
-                onScrollToFeed();
-              }}
-              className="px-6 py-3.5 rounded-2xl border border-slate-700/80 bg-slate-900/80 hover:bg-slate-800 hover:border-cyan-500/40 text-slate-200 font-semibold flex items-center gap-2 text-xs sm:text-sm transition-all cursor-pointer active:scale-95"
-            >
-              <ListFilter className="w-4 h-4 text-cyan-400" />
-              <span>{t.exploreFeedBtn}</span>
-            </button>
+      {/* 3 High-Tech Glowing Metric Stat Cards */}
+      <div className="grid grid-cols-3 gap-3 sm:gap-6 max-w-xl mx-auto mt-8">
+        
+        {/* Total Voices */}
+        <div className="relative group p-4 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-950 border border-orange-500/30 shadow-[0_0_25px_rgba(249,115,22,0.15)] hover:border-orange-500/60 transition-all">
+          <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight flex items-center justify-center gap-1">
+            <span>{total}</span>
           </div>
-
-          {/* Inline Quick Track Box */}
-          <div className="pt-3 max-w-lg">
-            <form onSubmit={handleHeroTrackSubmit} className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  value={heroTrackCode}
-                  onChange={(e) => setHeroTrackCode(e.target.value.toUpperCase())}
-                  placeholder={t.heroTrackPlaceholder}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700/80 text-xs font-mono text-cyan-300 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none tracking-wider uppercase"
-                />
-              </div>
-              <button
-                type="submit"
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 border border-slate-700 text-slate-200 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>{t.trackBtn}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </form>
-          </div>
-
+          <span className="text-[11px] font-bold uppercase tracking-wider text-orange-400/90 mt-1 block">
+            {lang === 'bn' ? 'মোট ভয়েস' : 'Total Voices'}
+          </span>
         </div>
 
-        {/* Right Col: Dynamic Floating Stat Cards */}
-        <div className="lg:col-span-5 grid grid-cols-2 gap-4">
-          
-          {/* Total Voices */}
-          <div className="p-5 sm:p-6 rounded-3xl border border-cyan-500/25 bg-slate-900/75 backdrop-blur-xl space-y-2 shadow-2xl hover:border-cyan-500/50 transition-all group">
-            <div className="w-11 h-11 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-lg font-bold group-hover:scale-105 transition-transform">
-              <GraduationCap className="w-5 h-5" />
-            </div>
-            <h3 className="font-extrabold text-3xl sm:text-4xl text-white font-mono tabular-nums tracking-tight">
-              {total}
-            </h3>
-            <p className="text-xs text-slate-400 font-medium">{t.statTotalVoices}</p>
+        {/* In Progress */}
+        <div className="relative group p-4 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-950 border border-amber-500/30 shadow-[0_0_25px_rgba(245,158,11,0.15)] hover:border-amber-500/60 transition-all">
+          <div className="text-2xl sm:text-3xl font-black text-amber-400 font-mono tracking-tight flex items-center justify-center gap-1.5">
+            <RotateCw className="w-4 h-4 animate-spin text-amber-400" />
+            <span>{inProgress}</span>
           </div>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-amber-300/90 mt-1 block">
+            {lang === 'bn' ? 'তদন্তাধীন' : 'Under Review'}
+          </span>
+        </div>
 
-          {/* Issues Resolved */}
-          <div className="p-5 sm:p-6 rounded-3xl border border-emerald-500/25 bg-slate-900/75 backdrop-blur-xl space-y-2 shadow-2xl hover:border-emerald-500/50 transition-all group">
-            <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg font-bold group-hover:scale-105 transition-transform">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <h3 className="font-extrabold text-3xl sm:text-4xl text-white font-mono tabular-nums tracking-tight">
-              {resolved}
-            </h3>
-            <p className="text-xs text-slate-400 font-medium">{t.statResolvedIssues}</p>
+        {/* Resolved */}
+        <div className="relative group p-4 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-950 border border-emerald-500/30 shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:border-emerald-500/60 transition-all">
+          <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono tracking-tight flex items-center justify-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span>{resolved}</span>
           </div>
-
-          {/* Multi-lingual Support Banner */}
-          <div className="p-5 sm:p-6 rounded-3xl border border-indigo-500/25 bg-slate-900/75 backdrop-blur-xl space-y-2 col-span-2 shadow-2xl hover:border-indigo-500/50 transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{t.multilingualBannerTitle}</span>
-              </span>
-              <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono border border-slate-700">
-                বাংলা ও English
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-sans">
-              {t.multilingualBannerText}
-            </p>
-          </div>
-
+          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300/90 mt-1 block">
+            {lang === 'bn' ? 'সমাধান সম্পন্ন' : 'Resolved'}
+          </span>
         </div>
 
       </div>
+
+      {/* Main Interactive Glowing Tab Selector Buttons */}
+      <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
+        <button
+          onClick={() => onSelectTab('browse')}
+          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center gap-2.5 ${
+            activeTab === 'browse'
+              ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-slate-950 shadow-[0_0_30px_rgba(249,115,22,0.6)] scale-105'
+              : 'bg-slate-950/80 border border-orange-500/30 text-slate-200 hover:text-white hover:border-orange-500/60 hover:shadow-[0_0_20px_rgba(249,115,22,0.2)]'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          <span>{lang === 'bn' ? 'পাবলিক ভয়েস দেখুন' : 'Explore Public Voices'}</span>
+        </button>
+
+        <button
+          onClick={() => onSelectTab('submit')}
+          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center gap-2.5 ${
+            activeTab === 'submit'
+              ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-slate-950 shadow-[0_0_30px_rgba(249,115,22,0.6)] scale-105'
+              : 'bg-slate-950/80 border border-orange-500/30 text-slate-200 hover:text-white hover:border-orange-500/60 hover:shadow-[0_0_20px_rgba(249,115,22,0.2)]'
+          }`}
+        >
+          <Send className="w-4 h-4" />
+          <span>{lang === 'bn' ? 'অভিযোগ বা আইডিয়া জানান' : 'Speak Up (Submit Issue)'}</span>
+        </button>
+
+        <button
+          onClick={() => onSelectTab('track')}
+          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center gap-2.5 ${
+            activeTab === 'track'
+              ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-slate-950 shadow-[0_0_30px_rgba(249,115,22,0.6)] scale-105'
+              : 'bg-slate-950/80 border border-orange-500/30 text-slate-200 hover:text-white hover:border-orange-500/60 hover:shadow-[0_0_20px_rgba(249,115,22,0.2)]'
+          }`}
+        >
+          <Search className="w-4 h-4" />
+          <span>{lang === 'bn' ? 'স্ট্যাটাস ট্র্যাক করুন' : 'Track by Code'}</span>
+        </button>
+      </div>
+
     </section>
   );
 };

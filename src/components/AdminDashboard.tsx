@@ -20,13 +20,13 @@ import {
   Save,
   Printer,
   ThumbsUp,
+  Flame,
   AlertTriangle
 } from 'lucide-react';
 import { VoiceRecord, AdminUser, VoiceStatus, PriorityLevel } from '../types';
 import { exportVoicesCSV, exportVoicesJSON, updateVoiceStatusAndNotes, deleteVoiceRecord } from '../utils/storage';
 import { AdminCharts } from './AdminCharts';
 import { AppLanguage, translations } from '../utils/translations';
-import { cyberSound } from '../utils/audio';
 
 interface AdminDashboardProps {
   adminUser: AdminUser;
@@ -69,7 +69,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const resolved = voices.filter((v) => v.metadata.status === 'Resolved').length;
   const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
 
-  // Filtered voices for table
   const filteredVoices = useMemo(() => {
     return voices.filter((v) => {
       const matchDept = deptFilter === 'ALL' || v.studentDetails.department === deptFilter;
@@ -88,7 +87,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, [voices, deptFilter, statusFilter, searchQuery]);
 
   const handleOpenEdit = (voice: VoiceRecord) => {
-    cyberSound.playClick();
     setEditingVoice(voice);
     setModalStatus(voice.metadata.status);
     setModalPriority(voice.metadata.priority || 'Normal');
@@ -100,7 +98,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     e.preventDefault();
     if (!editingVoice) return;
     setIsSaving(true);
-    cyberSound.playClick();
 
     setTimeout(() => {
       updateVoiceStatusAndNotes(
@@ -110,227 +107,179 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         modalCell,
         modalPriority
       );
-      cyberSound.playSuccess();
       setIsSaving(false);
       setEditingVoice(null);
       onVoicesUpdated();
-      onShowToast(
-        lang === 'bn'
-          ? `ভয়েস #${editingVoice.submissionId}-এর প্রশাসনিক নোট সফলভাবে আপডেট করা হয়েছে!`
-          : `Updated #${editingVoice.submissionId} with administrative action log!`,
-        'success'
-      );
+      onShowToast(`Updated #${editingVoice.submissionId} with administrative action log!`, 'success');
     }, 400);
   };
 
-  const handleDelete = (id: string) => {
-    cyberSound.playError();
-    const confirmMsg = lang === 'bn'
-      ? `আপনি কি নিশ্চিত যে রেকর্ডটি (${id}) স্থায়ীভাবে মুছে ফেলতে চান?`
-      : `Are you sure you want to permanently delete record ${id}?`;
+  // Deletion Modal state
+  const [voiceToDelete, setVoiceToDelete] = useState<VoiceRecord | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
-    if (window.confirm(confirmMsg)) {
-      deleteVoiceRecord(id);
+  const handleRequestDelete = (voice: VoiceRecord) => {
+    setVoiceToDelete(voice);
+  };
+
+  const confirmDelete = () => {
+    if (!voiceToDelete) return;
+    setIsDeleting(true);
+    const targetId = voiceToDelete.submissionId;
+    const ok = deleteVoiceRecord(targetId);
+
+    if (ok) {
       onVoicesUpdated();
-      onShowToast(
-        lang === 'bn' ? `রেকর্ড ${id} ভল্ট থেকে মুছে ফেলা হয়েছে।` : `Record ${id} removed from vault.`,
-        'error'
-      );
+      onShowToast(`Record #${targetId} has been permanently deleted from vault.`, 'error');
+      if (editingVoice?.submissionId === targetId) {
+        setEditingVoice(null);
+      }
+    } else {
+      onShowToast(`Failed to delete record #${targetId}.`, 'error');
     }
-  };
 
-  const handlePrint = () => {
-    cyberSound.playClick();
-    window.print();
-  };
-
-  const getStatusLabel = (status: string) => {
-    if (lang === 'bn') {
-      if (status === 'Resolved') return 'সমাধান সম্পন্ন';
-      if (status === 'In Progress') return 'পর্যালোচনাধীন';
-      return 'অপেক্ষমান';
-    }
-    return status;
+    setIsDeleting(false);
+    setVoiceToDelete(null);
   };
 
   return (
-    <main className="relative z-10 flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <main className="relative z-10 flex-grow max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
-      {/* Dashboard Top Header Banner */}
-      <div className="p-6 rounded-3xl border border-slate-800 bg-slate-900/80 backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-5 border-l-4 border-l-cyan-500 shadow-xl">
+      {/* Dashboard Top Glowing Header Banner */}
+      <div className="p-6 rounded-3xl border border-orange-500/30 bg-[#0F0C12]/90 backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-5 border-l-4 border-l-orange-500 shadow-[0_0_40px_rgba(249,115,22,0.2)]">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-400 text-[10px] font-bold tracking-widest uppercase border border-rose-500/20">
-              {t.adminBadge}
+            <span className="px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 text-[10px] font-black tracking-widest uppercase border border-orange-500/40">
+              Admin Control Room
             </span>
-            <span className="text-xs text-slate-400 font-mono">CGEC 2026 PRO</span>
+            <span className="text-xs text-orange-300/60 font-mono">CGEC 2026 PRO</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-white mt-1 font-sans">
-            {t.adminTitle}
+          <h2 className="text-2xl sm:text-3xl font-black text-white mt-1.5 flex items-center gap-2">
+            <span>Executive Analytics & Ledger</span>
+            <Flame className="w-5 h-5 text-orange-400 fill-orange-400" />
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {t.loggedInAs} <strong className="text-cyan-300 font-mono">{adminUser.email}</strong> ({adminUser.role})
+          <p className="text-xs text-slate-300 mt-0.5">
+            Logged in as: <strong className="text-orange-300 font-mono">{adminUser.email}</strong> ({adminUser.role})
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => {
-              cyberSound.playClick();
               exportVoicesCSV(voices);
               onShowToast('Exported DB as CSV', 'success');
             }}
-            className="px-3.5 py-2 rounded-xl border border-emerald-500/30 bg-emerald-950/20 hover:bg-emerald-950/40 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3.5 py-2 rounded-xl border border-emerald-500/30 bg-emerald-950/30 hover:bg-emerald-950/60 text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-            <span>{t.exportCSV}</span>
+            <span>Export CSV</span>
           </button>
 
           <button
             onClick={() => {
-              cyberSound.playClick();
               exportVoicesJSON(voices);
               onShowToast('Exported DB as JSON', 'success');
             }}
-            className="px-3.5 py-2 rounded-xl border border-indigo-500/30 bg-indigo-950/20 hover:bg-indigo-950/40 text-indigo-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3.5 py-2 rounded-xl border border-orange-500/30 bg-orange-950/30 hover:bg-orange-950/60 text-orange-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <FileCode className="w-3.5 h-3.5 text-indigo-400" />
-            <span>{t.exportJSON}</span>
+            <FileCode className="w-3.5 h-3.5 text-orange-400" />
+            <span>Export JSON</span>
           </button>
 
           <button
-            onClick={handlePrint}
-            title={t.printSummary}
-            className="px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            onClick={onBackToStudentView}
+            className="px-3.5 py-2 rounded-xl border border-orange-500/40 bg-slate-900 hover:bg-slate-800 text-orange-300 text-xs font-bold transition-colors cursor-pointer shadow-sm"
           >
-            <Printer className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t.printSummary}</span>
+            Back to Student View
           </button>
 
           <button
-            onClick={() => {
-              cyberSound.playClick();
-              onBackToStudentView();
-            }}
-            className="px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
-          >
-            {t.studentViewBtn}
-          </button>
-
-          <button
-            onClick={() => {
-              cyberSound.playClick();
-              onLogout();
-            }}
-            className="px-3.5 py-2 rounded-xl border border-rose-500/30 bg-rose-950/20 hover:bg-rose-950/40 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            onClick={onLogout}
+            className="px-3.5 py-2 rounded-xl border border-rose-500/30 bg-rose-950/30 hover:bg-rose-950/60 text-rose-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5 text-rose-400" />
-            <span>{lang === 'bn' ? 'লগআউট' : 'Logout'}</span>
+            <span>Logout</span>
           </button>
         </div>
       </div>
 
-      {/* 4 Stat KPI Cards */}
+      {/* 4 Glowing Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
         
-        {/* Total Submissions */}
-        <div className="p-5 rounded-3xl border border-slate-800 bg-slate-900/75 backdrop-blur-md shadow-xl">
+        <div className="p-5 rounded-3xl border border-orange-500/25 bg-[#0F0C12]/80 backdrop-blur-md shadow-[0_0_25px_rgba(249,115,22,0.1)]">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-semibold">{t.kpiTotal}</span>
-            <Inbox className="w-4 h-4 text-cyan-400" />
+            <span className="text-xs font-bold text-slate-300">Total Voices</span>
+            <Inbox className="w-4 h-4 text-orange-400" />
           </div>
-          <h4 className="text-2xl sm:text-3xl font-extrabold text-white font-mono tabular-nums">
-            {total}
-          </h4>
-          <span className="text-[10px] text-cyan-400 font-medium mt-1 block">
-            {lang === 'bn' ? 'মোট নিবন্ধিত শিক্ষার্থী মতামত' : 'All logged student voices'}
-          </span>
+          <h4 className="text-2xl sm:text-3xl font-black text-white font-mono">{total}</h4>
+          <span className="text-[10px] text-orange-400 font-bold mt-1 block">Logged records</span>
         </div>
 
-        {/* Pending */}
-        <div className="p-5 rounded-3xl border border-slate-800 bg-slate-900/75 backdrop-blur-md shadow-xl">
+        <div className="p-5 rounded-3xl border border-amber-500/25 bg-[#0F0C12]/80 backdrop-blur-md shadow-[0_0_25px_rgba(245,158,11,0.1)]">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-semibold">{t.kpiPending}</span>
+            <span className="text-xs font-bold text-slate-300">Pending Review</span>
             <Clock className="w-4 h-4 text-amber-400" />
           </div>
-          <h4 className="text-2xl sm:text-3xl font-extrabold text-amber-400 font-mono tabular-nums">
-            {pending}
-          </h4>
-          <span className="text-[10px] text-slate-400 font-medium mt-1 block">
-            {lang === 'bn' ? 'প্রাথমিক মূল্যায়নের অপেক্ষায়' : 'Requires initial review'}
-          </span>
+          <h4 className="text-2xl sm:text-3xl font-black text-amber-400 font-mono">{pending}</h4>
+          <span className="text-[10px] text-amber-300 font-bold mt-1 block">Requires assessment</span>
         </div>
 
-        {/* In Progress */}
-        <div className="p-5 rounded-3xl border border-slate-800 bg-slate-900/75 backdrop-blur-md shadow-xl">
+        <div className="p-5 rounded-3xl border border-orange-500/25 bg-[#0F0C12]/80 backdrop-blur-md shadow-[0_0_25px_rgba(249,115,22,0.1)]">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-semibold">{t.kpiInProgress}</span>
-            <RotateCw className="w-4 h-4 text-indigo-400 animate-spin" />
+            <span className="text-xs font-bold text-slate-300">Under Review</span>
+            <RotateCw className="w-4 h-4 text-orange-400 animate-spin" />
           </div>
-          <h4 className="text-2xl sm:text-3xl font-extrabold text-indigo-400 font-mono tabular-nums">
-            {inProgress}
-          </h4>
-          <span className="text-[10px] text-slate-400 font-medium mt-1 block">
-            {lang === 'bn' ? 'সংশ্লিষ্ট সেল বা কমিটি তদন্তাধীন' : 'Active committee inquiries'}
-          </span>
+          <h4 className="text-2xl sm:text-3xl font-black text-orange-400 font-mono">{inProgress}</h4>
+          <span className="text-[10px] text-orange-300 font-bold mt-1 block">Active investigations</span>
         </div>
 
-        {/* Resolution Rate */}
-        <div className="p-5 rounded-3xl border border-slate-800 bg-slate-900/75 backdrop-blur-md shadow-xl">
+        <div className="p-5 rounded-3xl border border-emerald-500/25 bg-[#0F0C12]/80 backdrop-blur-md shadow-[0_0_25px_rgba(16,185,129,0.1)]">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-semibold">{t.kpiResolvedRate}</span>
+            <span className="text-xs font-bold text-slate-300">Resolution Rate</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
-          <h4 className="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono tabular-nums">
-            {rate}%
-          </h4>
-          <span className="text-[10px] text-emerald-400/80 font-medium mt-1 block">
-            {resolved} {lang === 'bn' ? 'টি সমস্যা সমাধান হয়েছে' : 'issues solved'}
-          </span>
+          <h4 className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">{rate}%</h4>
+          <span className="text-[10px] text-emerald-400 font-bold mt-1 block">{resolved} issues resolved</span>
         </div>
 
       </div>
 
-      {/* Visual Analytics Chart.js Section */}
+      {/* Visual Analytics Chart */}
       <AdminCharts voices={voices} />
 
-      {/* Interactive Submissions Management Table */}
-      <div className="rounded-3xl border border-slate-800 bg-slate-900/80 backdrop-blur-xl overflow-hidden shadow-2xl">
+      {/* Submissions Management Table */}
+      <div className="rounded-3xl border border-orange-500/25 bg-[#0F0C12]/90 backdrop-blur-xl overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.8)]">
         
-        {/* Table Filter Top Bar */}
-        <div className="p-5 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Table Filter Bar */}
+        <div className="p-5 border-b border-orange-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h4 className="text-lg font-bold text-white flex items-center gap-2 font-sans">
-              <ListFilter className="w-4 h-4 text-cyan-400" />
-              <span>{t.tableTitle}</span>
+            <h4 className="text-lg font-bold text-white flex items-center gap-2">
+              <ListFilter className="w-4 h-4 text-orange-400" />
+              <span>Student Submissions Ledger</span>
             </h4>
             <p className="text-xs text-slate-400">
-              {t.tableSubtitle}
+              Update official redressal status, assign cells, and publish public remarks.
             </p>
           </div>
 
-          {/* Search & Filters */}
           <div className="flex flex-wrap items-center gap-2.5">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-orange-400/80" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t.searchPlaceholder}
-                className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200 focus:border-cyan-500 focus:outline-none w-48 sm:w-60 font-sans"
+                placeholder="Search ledger..."
+                className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 focus:border-orange-500 focus:outline-none w-48 sm:w-60"
               />
             </div>
 
             <select
               value={deptFilter}
-              onChange={(e) => {
-                cyberSound.playClick();
-                setDeptFilter(e.target.value);
-              }}
-              className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200 focus:border-cyan-500 focus:outline-none font-sans"
+              onChange={(e) => setDeptFilter(e.target.value)}
+              className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 focus:border-orange-500 focus:outline-none"
             >
-              <option value="ALL">{t.allDepts}</option>
+              <option value="ALL">All Depts</option>
               <option value="CSE">CSE</option>
               <option value="ECE">ECE</option>
               <option value="ME">ME</option>
@@ -340,16 +289,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <select
               value={statusFilter}
-              onChange={(e) => {
-                cyberSound.playClick();
-                setStatusFilter(e.target.value);
-              }}
-              className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-700 text-xs text-slate-200 focus:border-cyan-500 focus:outline-none font-sans"
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 focus:border-orange-500 focus:outline-none"
             >
-              <option value="ALL">{lang === 'bn' ? 'সকল স্ট্যাটাস' : 'All Status'}</option>
-              <option value="Pending">{t.tabPending}</option>
-              <option value="In Progress">{t.tabInProgress}</option>
-              <option value="Resolved">{t.tabResolved}</option>
+              <option value="ALL">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
             </select>
           </div>
         </div>
@@ -357,150 +303,120 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* Responsive Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/70 uppercase text-[10px] font-bold tracking-wider text-slate-400 border-b border-slate-800 font-sans">
+            <thead className="bg-slate-950/80 uppercase text-[10px] font-bold tracking-wider text-orange-300/80 border-b border-orange-500/20">
               <tr>
-                <th className="py-3.5 px-4">{lang === 'bn' ? 'আইডি / সময়' : 'ID / Time'}</th>
-                <th className="py-3.5 px-4">{lang === 'bn' ? 'শিক্ষার্থীর তথ্য' : 'Student Details'}</th>
-                <th className="py-3.5 px-4">{lang === 'bn' ? 'ডিপার্টমেন্ট / বর্ষ' : 'Dept / Year'}</th>
-                <th className="py-3.5 px-4">{lang === 'bn' ? 'ভয়েস বিষয়' : 'Voice Subject'}</th>
-                <th className="py-3.5 px-4">{lang === 'bn' ? 'সমর্থন' : 'Support'}</th>
-                <th className="py-3.5 px-4">{lang === 'bn' ? 'স্ট্যাটাস' : 'Status'}</th>
-                <th className="py-3.5 px-4 text-right">{lang === 'bn' ? 'অ্যাকশন' : 'Actions'}</th>
+                <th className="py-3.5 px-4">ID / Time</th>
+                <th className="py-3.5 px-4">Student Details</th>
+                <th className="py-3.5 px-4">Dept / Year</th>
+                <th className="py-3.5 px-4">Voice Subject</th>
+                <th className="py-3.5 px-4">Support</th>
+                <th className="py-3.5 px-4">Status</th>
+                <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-sans">
               {filteredVoices.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-10 text-center text-slate-500 text-xs">
-                    {t.noVoicesFound}
+                    No voices match your search criteria.
                   </td>
                 </tr>
               ) : (
-                filteredVoices.map((item) => {
-                  const dateStr = new Date(item.metadata.submittedAt).toLocaleTimeString(lang === 'bn' ? 'bn-IN' : 'en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  });
+                filteredVoices.map((item) => (
+                  <tr key={item.submissionId} className="hover:bg-slate-900/60 transition-colors">
+                    <td className="py-3 px-4 font-mono text-[11px]">
+                      <div className="font-bold text-orange-400">{item.submissionId}</div>
+                      <div className="text-[10px] text-slate-500">
+                        {new Date(item.metadata.submittedAt).toLocaleDateString()}
+                      </div>
+                    </td>
 
-                  return (
-                    <tr key={item.submissionId} className="hover:bg-slate-800/40 transition-colors">
-                      {/* ID / Time */}
-                      <td className="py-3 px-4 font-mono text-[11px]">
-                        <div className="font-bold text-cyan-400 flex items-center gap-1">
-                          <span>{item.submissionId}</span>
-                          {item.metadata.priority === 'Urgent' && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                          )}
-                        </div>
-                        <div className="text-[10px] text-slate-500">{dateStr}</div>
-                      </td>
-
-                      {/* Student details */}
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-200 flex items-center gap-1.5">
-                          <span>{item.studentDetails.name}</span>
-                          {item.studentDetails.isAnonymous && (
-                            <span className="text-[9px] px-1.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-500/30">
-                              {lang === 'bn' ? 'গোপন' : 'Shielded'}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[10px] text-slate-400 flex items-center gap-2 font-mono">
-                          <span>{item.studentDetails.email}</span>
-                          <span>•</span>
-                          <span>{item.studentDetails.phone}</span>
-                        </div>
-                      </td>
-
-                      {/* Dept / Year */}
-                      <td className="py-3 px-4">
-                        <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[10px] font-bold">
-                          {item.studentDetails.department}
-                        </span>
-                        <div className="text-[10px] text-slate-400 mt-0.5">{item.studentDetails.year}</div>
-                      </td>
-
-                      {/* Subject */}
-                      <td className="py-3 px-4 max-w-xs">
-                        <button
-                          onClick={() => {
-                            cyberSound.playClick();
-                            onInspectVoice(item);
-                          }}
-                          className="font-medium text-slate-200 hover:text-cyan-400 transition-colors text-left truncate block w-full cursor-pointer"
-                        >
-                          {item.content.subject}
-                        </button>
-                        {item.metadata.adminNotes && (
-                          <div className="text-[10px] text-emerald-400/90 truncate mt-0.5 italic">
-                            {lang === 'bn' ? 'পদক্ষেপ:' : 'Action:'} "{item.metadata.adminNotes}"
-                          </div>
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-slate-200 flex items-center gap-1.5">
+                        <span>{item.studentDetails.name}</span>
+                        {item.studentDetails.isAnonymous && (
+                          <span className="text-[9px] px-1.5 rounded bg-orange-950 text-orange-300 border border-orange-500/30 font-bold">
+                            Shielded
+                          </span>
                         )}
-                      </td>
+                      </div>
+                      <div className="text-[10px] text-slate-400 flex items-center gap-2 font-mono">
+                        <span>{item.studentDetails.email}</span>
+                      </div>
+                    </td>
 
-                      {/* Solidarity Upvotes */}
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-cyan-300">
-                          <ThumbsUp className="w-3 h-3 text-cyan-400" />
-                          <span>{item.metadata.upvotes || 0}</span>
-                        </span>
-                      </td>
+                    <td className="py-3 px-4">
+                      <span className="bg-slate-800 text-orange-200 px-2 py-0.5 rounded text-[10px] font-bold">
+                        {item.studentDetails.department}
+                      </span>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{item.studentDetails.year}</div>
+                    </td>
 
-                      {/* Status Dropdown */}
-                      <td className="py-3 px-4">
-                        <span
-                          className={`text-[10px] px-2.5 py-1 rounded-xl font-bold uppercase border ${
-                            item.metadata.status === 'Pending'
-                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                              : item.metadata.status === 'In Progress'
-                              ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
-                              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                          }`}
-                        >
-                          {getStatusLabel(item.metadata.status)}
-                        </span>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end space-x-1.5">
-                          {/* Quick Edit Action */}
-                          <button
-                            onClick={() => handleOpenEdit(item)}
-                            title={lang === 'bn' ? 'স্ট্যাটাস ও প্রশাসনিক মন্তব্য আপডেট' : 'Update Status & Action Notes'}
-                            className="p-1.5 rounded-lg bg-cyan-950/40 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 border border-cyan-500/30 transition-all cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Inspect Modal */}
-                          <button
-                            onClick={() => {
-                              cyberSound.playClick();
-                              onInspectVoice(item);
-                            }}
-                            title={lang === 'bn' ? 'বিস্তারিত দেখুন' : 'Inspect Details'}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Delete */}
-                          <button
-                            onClick={() => handleDelete(item.submissionId)}
-                            title={lang === 'bn' ? 'মুছে ফেলুন' : 'Delete Record'}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                    <td className="py-3 px-4 max-w-xs">
+                      <button
+                        onClick={() => onInspectVoice(item)}
+                        className="font-medium text-slate-200 hover:text-orange-400 transition-colors text-left truncate block w-full cursor-pointer"
+                      >
+                        {item.content.subject}
+                      </button>
+                      {item.metadata.adminNotes && (
+                        <div className="text-[10px] text-amber-300 truncate mt-0.5 italic">
+                          "{item.metadata.adminNotes}"
                         </div>
-                      </td>
+                      )}
+                    </td>
 
-                    </tr>
-                  );
-                })
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-orange-300">
+                        <ThumbsUp className="w-3 h-3 text-orange-400" />
+                        <span>{item.metadata.upvotes || 0}</span>
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-4">
+                      <span
+                        className={`text-[10px] px-2.5 py-1 rounded-xl font-bold uppercase ${
+                          item.metadata.status === 'Pending'
+                            ? 'bg-orange-500/15 text-orange-300 border border-orange-500/30'
+                            : item.metadata.status === 'In Progress'
+                            ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                            : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                        }`}
+                      >
+                        {item.metadata.status}
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end space-x-1.5">
+                        <button
+                          onClick={() => handleOpenEdit(item)}
+                          title="Update Status & Action Notes"
+                          className="p-1.5 rounded-lg bg-orange-950/40 hover:bg-orange-500 text-orange-300 hover:text-slate-950 border border-orange-500/40 transition-all cursor-pointer shadow-sm"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => onInspectVoice(item)}
+                          title="Inspect Details"
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => handleRequestDelete(item)}
+                          title="Permanently Delete Submission"
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -508,12 +424,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       </div>
 
-      {/* Admin Action & Official Remark Modal */}
+      {/* Admin Action Modal */}
       {editingVoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-lg rounded-3xl border border-cyan-500/40 bg-slate-900 p-6 sm:p-8 shadow-2xl shadow-cyan-950/80 overflow-hidden font-sans">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+          <div className="relative w-full max-w-lg rounded-3xl border border-orange-500/40 bg-[#0F0C12] p-6 sm:p-8 shadow-[0_0_50px_rgba(249,115,22,0.3)] overflow-hidden">
             
-            <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-cyan-400 via-indigo-500 to-emerald-400" />
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-[0_0_20px_rgba(249,115,22,0.8)]" />
 
             <button
               onClick={() => setEditingVoice(null)}
@@ -523,97 +439,190 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
 
             <div className="mb-5">
-              <span className="font-mono text-xs font-bold text-cyan-400">
-                {t.actionConsole} • {editingVoice.submissionId}
+              <span className="font-mono text-xs font-black text-orange-400 flex items-center gap-1">
+                <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400" />
+                <span>Action Console • {editingVoice.submissionId}</span>
               </span>
               <h3 className="text-lg font-black text-white mt-1 leading-snug">
                 {editingVoice.content.subject}
               </h3>
             </div>
 
-            <form onSubmit={handleSaveModal} className="space-y-4">
+            <form onSubmit={handleSaveModal} className="space-y-4 text-xs sm:text-sm">
               
               <div className="grid grid-cols-2 gap-3">
-                {/* Status */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    {lang === 'bn' ? 'সমাধানের অগ্রগতি স্ট্যাটাস' : 'Redressal Status'}
+                  <label className="block font-bold text-slate-300 mb-1">
+                    Redressal Status
                   </label>
                   <select
                     value={modalStatus}
                     onChange={(e) => setModalStatus(e.target.value as VoiceStatus)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-xs focus:border-orange-500 focus:outline-none"
                   >
-                    <option value="Pending">{t.tabPending}</option>
-                    <option value="In Progress">{t.tabInProgress}</option>
-                    <option value="Resolved">{t.tabResolved}</option>
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
                   </select>
                 </div>
 
-                {/* Priority */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    {lang === 'bn' ? 'জরুরী মাত্রা' : 'Priority Escalation'}
+                  <label className="block font-bold text-slate-300 mb-1">
+                    Priority Level
                   </label>
                   <select
                     value={modalPriority}
                     onChange={(e) => setModalPriority(e.target.value as PriorityLevel)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-xs focus:border-orange-500 focus:outline-none"
                   >
-                    <option value="Normal">{lang === 'bn' ? 'স্বাভাবিক (Normal)' : 'Normal'}</option>
-                    <option value="High">{lang === 'bn' ? 'উচ্চ অগ্রাধিকার (High)' : 'High Priority'}</option>
-                    <option value="Urgent">{lang === 'bn' ? 'জরুরী জরুরী (Urgent)' : 'Urgent Emergency'}</option>
+                    <option value="Normal">Normal</option>
+                    <option value="High">High Priority</option>
+                    <option value="Urgent">Urgent Emergency</option>
                   </select>
                 </div>
               </div>
 
-              {/* Committee / Cell Assignment */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  {lang === 'bn' ? 'দায়িত্বপ্রাপ্ত সেল / কমিটি নির্ধারণ' : 'Assign To Committee / Cell'}
+                <label className="block font-bold text-slate-300 mb-1">
+                  Assign Committee / Department Cell
                 </label>
                 <input
                   type="text"
                   value={modalCell}
                   onChange={(e) => setModalCell(e.target.value)}
-                  placeholder={lang === 'bn' ? 'যেমন: ওয়ার্কশপ রক্ষণাবেক্ষণ ডেস্ক, অ্যান্টি-র‍্যাগিং সেল' : 'e.g. Workshop Maintenance Desk, Anti-Ragging Cell'}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
+                  placeholder="e.g. Workshop Maintenance Desk, Anti-Ragging Cell"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-100 focus:border-orange-500 focus:outline-none"
                 />
               </div>
 
-              {/* Official Remarks */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  {lang === 'bn' ? 'অফিশিয়াল প্রশাসনিক পদক্ষেপ মন্তব্য (শিক্ষার্থী দেখতে পাবে)' : 'Official Admin Action Remarks (Visible to Student)'}
+                <label className="block font-bold text-slate-300 mb-1">
+                  Official Administrative Remarks (Visible to Student)
                 </label>
                 <textarea
                   rows={3}
                   value={modalNotes}
                   onChange={(e) => setModalNotes(e.target.value)}
-                  placeholder={lang === 'bn' ? 'গৃহীত সুনির্দিষ্ট পদক্ষেপ লিখুন (যেমন: ল্যাবে নতুন রাউটার ইনস্টলেশন সম্পন্ন)।' : 'State the concrete action taken.'}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none resize-none"
+                  placeholder="State the concrete action taken..."
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-100 focus:border-orange-500 focus:outline-none resize-none leading-relaxed"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex items-center justify-between gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setEditingVoice(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-colors cursor-pointer"
+                  onClick={() => {
+                    const current = editingVoice;
+                    setEditingVoice(null);
+                    handleRequestDelete(current);
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/40 text-rose-300 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
-                  {lang === 'bn' ? 'বাতিল' : 'Cancel'}
+                  <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Delete Submission</span>
                 </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{isSaving ? (lang === 'bn' ? 'সংরক্ষণ হচ্ছে...' : 'Saving...') : t.saveRemarksBtn}</span>
-                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingVoice(null)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black text-xs shadow-[0_0_20px_rgba(249,115,22,0.6)] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{isSaving ? 'Saving...' : 'Save & Publish Action'}</span>
+                  </button>
+                </div>
               </div>
 
             </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* In-App Delete Confirmation Modal */}
+      {voiceToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+          <div className="relative w-full max-w-md rounded-3xl border border-rose-500/50 bg-[#120B0F] p-6 sm:p-7 shadow-[0_0_60px_rgba(244,63,94,0.35)] overflow-hidden">
+            {/* Top Glowing Red Accent */}
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 shadow-[0_0_20px_rgba(244,63,94,0.8)]" />
+
+            {/* Close button */}
+            <button
+              onClick={() => !isDeleting && setVoiceToDelete(null)}
+              disabled={isDeleting}
+              className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0 shadow-[0_0_20px_rgba(244,63,94,0.4)]">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="font-mono text-[11px] font-bold text-rose-400 tracking-wider uppercase">
+                  Permanent Removal • {voiceToDelete.submissionId}
+                </span>
+                <h3 className="text-lg font-black text-white mt-0.5 leading-snug">
+                  Delete Voice Submission?
+                </h3>
+              </div>
+            </div>
+
+            {/* Details Box */}
+            <div className="p-3.5 rounded-2xl bg-slate-950 border border-rose-500/25 space-y-2 mb-5 text-xs">
+              <div className="font-bold text-slate-100 line-clamp-2">
+                "{voiceToDelete.content.subject}"
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+                <span>By: <strong className="text-slate-200">{voiceToDelete.studentDetails.isAnonymous ? 'Anonymous Student' : voiceToDelete.studentDetails.name}</strong></span>
+                <span>•</span>
+                <span>Dept: <strong className="text-orange-300">{voiceToDelete.studentDetails.department} ({voiceToDelete.studentDetails.year})</strong></span>
+              </div>
+              <p className="text-[11px] text-rose-300/80 pt-1 border-t border-slate-800/80">
+                ⚠️ This will immediately purge this record from both the public student feed and the institutional ledger. This action cannot be reversed.
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setVoiceToDelete(null)}
+                disabled={isDeleting}
+                className="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel / Keep
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-xs shadow-[0_0_25px_rgba(244,63,94,0.6)] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Permanently</span>
+                  </>
+                )}
+              </button>
+            </div>
 
           </div>
         </div>

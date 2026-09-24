@@ -6,7 +6,6 @@ export const InteractiveCanvas: React.FC = () => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -22,140 +21,85 @@ export const InteractiveCanvas: React.FC = () => {
 
     window.addEventListener('resize', handleResize);
 
-    // Mouse coordinates
-    let mouse = {
-      x: width / 2,
-      y: height / 2,
-      radius: 160,
-    };
+    // Glowing orange embers and floating fiery energy particles
+    const particleCount = Math.min(Math.floor((width * height) / 22000), 45);
+    const particles = Array.from({ length: particleCount }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      radius: Math.random() * 2.2 + 0.8,
+      glowRadius: Math.random() * 16 + 8,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: -(Math.random() * 0.5 + 0.2), // gentle upward float like embers
+      alpha: Math.random() * 0.6 + 0.25,
+      hue: Math.random() > 0.4 ? 28 : 38, // fiery orange (28) or amber yellow (38)
+    }));
 
-    const handleMouseMove = (e: MouseEvent) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-
-    // Particles array
-    const numParticles = Math.min(95, Math.floor(width / 14));
-    const particles: {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      radius: number;
-      color: string;
-      alpha: number;
-    }[] = [];
-
-    const colors = ['#06b6d4', '#38bdf8', '#6366f1', '#10b981', '#a855f7'];
-
-    for (let i = 0; i < numParticles; i++) {
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.7,
-        vy: (Math.random() - 0.5) * 0.7,
-        radius: Math.random() * 2 + 1,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        alpha: Math.random() * 0.5 + 0.3,
-      });
-    }
-
-    const draw = () => {
+    const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Subtle background radial gradient following mouse
-      const bgGrad = ctx.createRadialGradient(
-        mouse.x,
-        mouse.y,
-        10,
-        mouse.x,
-        mouse.y,
-        Math.max(width, height) * 0.8
-      );
-      bgGrad.addColorStop(0, 'rgba(6, 182, 212, 0.035)');
-      bgGrad.addColorStop(0.5, 'rgba(99, 102, 241, 0.015)');
-      bgGrad.addColorStop(1, 'rgba(11, 15, 25, 0)');
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, width, height);
-
-      // Update and draw particles
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
-
+      particles.forEach((p) => {
         p.x += p.vx;
         p.y += p.vy;
 
-        if (p.x < 0) p.x = width;
-        if (p.x > width) p.x = 0;
-        if (p.y < 0) p.y = height;
-        if (p.y > height) p.y = 0;
+        // Wrap around smoothly
+        if (p.x < -20) p.x = width + 20;
+        if (p.x > width + 20) p.x = -20;
+        if (p.y < -20) p.y = height + 20;
+        if (p.y > height + 20) p.y = -20;
 
-        // Interaction with mouse
-        const dx = mouse.x - p.x;
-        const dy = mouse.y - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        // Radial glow gradient for realistic neon/firefly halo
+        const grad = ctx.createRadialGradient(
+          p.x,
+          p.y,
+          0,
+          p.x,
+          p.y,
+          p.glowRadius
+        );
+        grad.addColorStop(0, `hsla(${p.hue}, 95%, 60%, ${p.alpha})`);
+        grad.addColorStop(0.3, `hsla(${p.hue}, 90%, 50%, ${p.alpha * 0.4})`);
+        grad.addColorStop(1, `hsla(${p.hue}, 100%, 50%, 0)`);
 
-        if (dist < mouse.radius) {
-          const force = (mouse.radius - dist) / mouse.radius;
-          const angle = Math.atan2(dy, dx);
-          p.x -= Math.cos(angle) * force * 1.5;
-          p.y -= Math.sin(angle) * force * 1.5;
-        }
-
-        // Draw particle node
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 10;
-        ctx.globalAlpha = p.alpha;
+        ctx.arc(p.x, p.y, p.glowRadius, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
         ctx.fill();
 
-        // Connect nearby particles with glowing lines
-        for (let j = i + 1; j < particles.length; j++) {
-          const p2 = particles[j];
-          const distBetween = Math.hypot(p.x - p2.x, p.y - p2.y);
+        // Bright core
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue + 10}, 100%, 85%, ${p.alpha * 1.2})`;
+        ctx.fill();
+      });
 
-          if (distBetween < 110) {
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = '#06b6d4';
-            ctx.globalAlpha = (1 - distBetween / 110) * 0.22;
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
-          }
-        }
-      }
-
-      ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
-
-      animationFrameId = requestAnimationFrame(draw);
+      animationFrameId = requestAnimationFrame(render);
     };
 
-    draw();
+    render();
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('mousemove', handleMouseMove);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {/* Cyber Grid pattern */}
+    <>
+      {/* Background ambient radial lighting gradients in corners */}
       <div
-        className="absolute inset-0 opacity-[0.03] z-0"
-        style={{
-          backgroundImage: `linear-gradient(#06b6d4 1px, transparent 1px), linear-gradient(90deg, #06b6d4 1px, transparent 1px)`,
-          backgroundSize: '48px 48px',
-        }}
+        className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+        aria-hidden="true"
+      >
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-b from-orange-600/18 via-amber-600/10 to-transparent blur-3xl rounded-full" />
+        <div className="absolute top-1/3 -right-32 w-[500px] h-[500px] bg-orange-500/10 blur-[130px] rounded-full" />
+        <div className="absolute bottom-10 -left-32 w-[550px] h-[550px] bg-amber-600/10 blur-[140px] rounded-full" />
+      </div>
+
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 pointer-events-none z-0 opacity-80"
+        aria-hidden="true"
       />
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-    </div>
+    </>
   );
 };

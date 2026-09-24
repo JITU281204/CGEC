@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Lock, Mail, Eye, EyeOff, ShieldAlert, KeyRound, Check, X, ShieldCheck, Info } from 'lucide-react';
-import { verifyAdminAuth, saveAdminSession, AUTHORIZED_ADMIN_EMAILS, VALID_MASTER_PASSCODES } from '../utils/storage';
+import React, { useState, useEffect } from 'react';
+import { Lock, Mail, Eye, EyeOff, ShieldAlert, KeyRound, X, ShieldCheck, Flame, Shield, AlertTriangle } from 'lucide-react';
+import { verifyAdminAuth, saveAdminSession } from '../utils/storage';
 import { AdminUser } from '../types';
 
 interface AdminLoginModalProps {
@@ -12,38 +12,51 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   onClose,
   onLoginSuccess,
 }) => {
-  const [email, setEmail] = useState<string>('jituraj19cse@gmail.com');
+  const [email, setEmail] = useState<string>('');
   const [passcode, setPasscode] = useState<string>('');
   const [showPasscode, setShowPasscode] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
-  const [copiedKey, setCopiedKey] = useState<boolean>(false);
   const [shake, setShake] = useState<boolean>(false);
+  const [failedAttempts, setFailedAttempts] = useState<number>(0);
+  const [lockoutRemaining, setLockoutRemaining] = useState<number>(0);
 
-  const displayPasscode = 'CGEC#Voice2026!Xk9';
+  // Lockout countdown timer
+  useEffect(() => {
+    if (lockoutRemaining <= 0) return;
+    const interval = setInterval(() => {
+      setLockoutRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutRemaining]);
 
-  const handleQuickFill = (targetEmail: string) => {
-    setEmail(targetEmail);
-    setPasscode(displayPasscode);
-    setErrorMsg('');
-  };
-
-  const handleCopyPasscode = () => {
-    navigator.clipboard.writeText(displayPasscode);
-    setCopiedKey(true);
-    setTimeout(() => setCopiedKey(false), 2000);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (lockoutRemaining > 0) return;
+
     setErrorMsg('');
     setIsVerifying(true);
 
-    setTimeout(() => {
-      const result = verifyAdminAuth(email, passcode);
+    try {
+      const result = await verifyAdminAuth(email, passcode);
 
       if (!result.success) {
-        setErrorMsg(result.message);
+        const nextAttempts = failedAttempts + 1;
+        setFailedAttempts(nextAttempts);
+
+        if (nextAttempts >= 5) {
+          setLockoutRemaining(45); // 45 seconds lockout
+          setErrorMsg('Security lockout triggered: Too many invalid attempts. Try again after 45 seconds.');
+        } else {
+          setErrorMsg(result.message);
+        }
+
         setIsVerifying(false);
         setShake(true);
         setTimeout(() => setShake(false), 500);
@@ -55,161 +68,151 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         onLoginSuccess(result.adminUser);
         onClose();
       }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('Cryptographic authorization failed. Please retry.');
+    } finally {
       setIsVerifying(false);
-    }, 450);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
       <div
-        className={`relative w-full max-w-md rounded-3xl border border-cyan-500/40 bg-slate-900 p-6 sm:p-8 shadow-2xl shadow-cyan-950/80 overflow-hidden transition-all ${
+        className={`relative w-full max-w-md rounded-3xl border border-orange-500/40 bg-[#0E0B12] p-6 sm:p-8 shadow-[0_0_60px_rgba(249,115,22,0.3)] overflow-hidden transition-transform ${
           shake ? 'animate-bounce' : ''
         }`}
       >
-        {/* Top security accent line */}
-        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-cyan-500 via-indigo-600 to-rose-500" />
+        {/* Top Glowing Fiery Accent Line */}
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-[0_0_20px_rgba(249,115,22,0.8)]" />
 
-        {/* Close button */}
+        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          title="Close"
         >
           <X className="w-5 h-5" />
         </button>
 
-        {/* Header with badge */}
+        {/* Secure Header */}
         <div className="text-center space-y-2 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 mx-auto flex items-center justify-center text-xl text-white shadow-lg shadow-cyan-500/30">
-            <Lock className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 mx-auto flex items-center justify-center text-slate-950 shadow-[0_0_25px_rgba(249,115,22,0.5)]">
+            <Shield className="w-6 h-6 text-slate-950 stroke-[2.5]" />
           </div>
-          <h3 className="text-xl font-black text-white tracking-tight">CGEC Admin Authentication</h3>
-          <p className="text-xs text-slate-400">Enter authorized admin email & master passcode.</p>
+          <h3 className="text-xl font-black text-white tracking-tight">Institutional Admin Vault</h3>
+          <p className="text-xs text-orange-200/70">
+            Encrypted Administrative Access Gateway
+          </p>
         </div>
 
-        {/* Error message banner */}
+        {/* Security Notice */}
+        <div className="mb-5 p-3 rounded-2xl border border-orange-500/20 bg-orange-950/20 text-orange-200 text-[11px] flex items-center gap-2">
+          <Lock className="w-4 h-4 text-orange-400 shrink-0" />
+          <span>Restricted to designated CGEC authority cell members. All verification attempts are cryptographically hashed.</span>
+        </div>
+
+        {/* Error / Lockout Banner */}
         {errorMsg && (
-          <div className="mb-4 p-3 rounded-xl border border-rose-500/40 bg-rose-950/40 text-rose-300 text-xs flex items-start gap-2">
-            <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-            <span>{errorMsg}</span>
+          <div className="mb-4 p-3 rounded-xl border border-rose-500/40 bg-rose-950/50 text-rose-300 text-xs flex items-start gap-2">
+            {lockoutRemaining > 0 ? (
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            ) : (
+              <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            )}
+            <div>
+              <span>{errorMsg}</span>
+              {lockoutRemaining > 0 && (
+                <div className="mt-1 font-bold text-amber-300">
+                  Cooldown timer: {lockoutRemaining}s remaining
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* Email Select / Input */}
+          {/* Admin Email (Zero pre-suggestions) */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Authorized Admin Email
+            <label className="block text-xs font-bold text-slate-300 mb-1.5">
+              Designated Admin Email
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-              <select
+              <Mail className="w-4 h-4 text-orange-400 absolute left-3 top-3.5" />
+              <input
+                type="email"
+                required
+                disabled={lockoutRemaining > 0 || isVerifying}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-slate-100 text-xs focus:border-cyan-500 focus:outline-none"
-              >
-                <option value="jituraj19cse@gmail.com">jituraj19cse@gmail.com (Lead Admin)</option>
-                <option value="royniloy1235@gmail.com">royniloy1235@gmail.com (Executive Admin)</option>
-              </select>
+                placeholder="Enter authorized administrator email"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-xs focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 transition-colors disabled:opacity-50"
+              />
             </div>
           </div>
 
-          {/* Master Passcode */}
+          {/* Master Passcode (Zero pre-suggestions) */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-slate-300">
-                16-Digit Master Passcode
+              <label className="text-xs font-bold text-slate-300">
+                Master Security Passcode
               </label>
             </div>
             <div className="relative">
-              <KeyRound className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+              <KeyRound className="w-4 h-4 text-orange-400 absolute left-3 top-3.5" />
               <input
                 type={showPasscode ? 'text' : 'password'}
                 required
+                disabled={lockoutRemaining > 0 || isVerifying}
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
-                placeholder="CGEC#Voice2026!Xk9"
-                className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-slate-100 text-xs font-mono tracking-wider focus:border-cyan-500 focus:outline-none"
+                placeholder="Enter encrypted access key"
+                autoComplete="new-password"
+                className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-xs font-mono tracking-wider focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 transition-colors disabled:opacity-50"
               />
               <button
                 type="button"
+                tabIndex={-1}
                 onClick={() => setShowPasscode(!showPasscode)}
-                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200"
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-200 transition-colors"
+                title={showPasscode ? "Hide Passcode" : "Show Passcode"}
               >
                 {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          {/* Quick Helper */}
-          <div className="p-3.5 rounded-2xl border border-cyan-500/20 bg-cyan-950/20 text-xs text-slate-300">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 text-cyan-400 font-semibold">
-                <ShieldCheck className="w-4 h-4" />
-                <span>Master Passcode:</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <code className="font-mono text-xs bg-slate-900 px-2 py-0.5 rounded border border-slate-700 text-cyan-300 font-bold">
-                  {displayPasscode}
-                </code>
-                <button
-                  type="button"
-                  onClick={handleCopyPasscode}
-                  className="text-slate-400 hover:text-white"
-                  title="Copy passcode"
-                >
-                  {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <KeyRound className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-2.5 flex items-center gap-2 pt-2 border-t border-cyan-900/30 text-[11px] text-slate-400">
-              <span>Quick Login:</span>
-              <button
-                type="button"
-                onClick={() => handleQuickFill('jituraj19cse@gmail.com')}
-                className="text-cyan-400 underline hover:text-cyan-300"
-              >
-                jituraj19cse
-              </button>
-              <span>·</span>
-              <button
-                type="button"
-                onClick={() => handleQuickFill('royniloy1235@gmail.com')}
-                className="text-cyan-400 underline hover:text-cyan-300"
-              >
-                royniloy1235
-              </button>
-            </div>
-          </div>
-
-          {/* Submit */}
+          {/* Submit Button */}
           <button
             type="submit"
-            disabled={isVerifying}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+            disabled={isVerifying || lockoutRemaining > 0 || !email || !passcode}
+            className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm shadow-[0_0_25px_rgba(249,115,22,0.6)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isVerifying ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Authenticating Credentials...</span>
+                <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                <span>Hashing & Verifying Credentials...</span>
               </>
+            ) : lockoutRemaining > 0 ? (
+              <span>Locked ({lockoutRemaining}s)</span>
             ) : (
               <>
-                <Lock className="w-4 h-4" />
-                <span>Authenticate & Unlock Portal</span>
+                <ShieldCheck className="w-4 h-4" />
+                <span>Authenticate & Access Vault</span>
               </>
             )}
           </button>
 
-        </form>
-
-        <div className="mt-4 text-center">
-          <p className="text-[11px] text-slate-500 flex items-center justify-center gap-1">
-            <Info className="w-3 h-3 text-cyan-400" />
-            <span>Strict Role-Based Access Control (RBAC) Active</span>
+          <p className="text-center text-[10px] text-slate-500 pt-1">
+            256-Bit Cryptographic Hash Protocol • Anti-Brute-Force Protected
           </p>
-        </div>
+
+        </form>
 
       </div>
     </div>

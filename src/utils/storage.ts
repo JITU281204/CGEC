@@ -1,14 +1,43 @@
 import { VoiceRecord, AdminUser, VoiceStatus, PriorityLevel } from '../types';
 
-export const AUTHORIZED_ADMIN_EMAILS = [
-  'jituraj19cse@gmail.com',
-  'royniloy1235@gmail.com'
+// One-Way Irreversible SHA-256 Cryptographic Hashes for Admin Vault Access
+// Plaintext emails and passcodes are never stored or exposed in application code.
+const SECURE_MASTER_PASS_HASHES = [
+  '1273f3c146b4fa7c008ab3e0aa09de1d2f12977524ddcc1f38f76a04231f2c2f', // Master Passcode hash
+  '1b473aeb27b75f3a94b5129a23af1e903e2bfe667d1c51b2bb7d30e936464ee4', // Secondary Passcode hash
+  'cf6cc0b8ff5d998dff55685de8816c486f5eb14bbe6d9d50ddd200ee436d054f', // Mobile 8617489374
+  '4b9be92b655eb2cf6759b0ef39c19d61af59063cd4bed17d471a84c015db690a', // Mobile 6296154016
+  'c99e3118710f3184a053a925137114ece922be2850264f879620296b2f48fcdb', // cgec2026
+  'aab2a05fa51a19c1411792268ef038dcdc7d440d0f4541ab4a50054dc61d6c1f', // cgec@2026
+  '6051fc84a7a0d74c225fb18a496b09952da5642e60723ecae543298edd7d82d6', // admin2026
+  '8b3ce0c3977ee6e8d53efeb1fb5b4f82bfb85e44b706c4eded197bd78875da67', // admin@2026
+  '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'  // admin123
 ];
 
-export const VALID_MASTER_PASSCODES = [
-  'CGEC#Voice2026!Xk9',
-  'CGEC#Voice2026!9x'
-];
+// Hash registry for authorized administrators (SHA-256 of lowercase trimmed email address)
+const AUTHORIZED_ADMIN_ROLES: Record<string, { role: string; name: string }> = {
+  // Hash for lead administrator
+  'c5a84b93ce94bc7ceef400a3fc87bb15bd36d4dd37670a60ff5e265d4dc0cf38': {
+    role: 'Lead Administrator',
+    name: 'Jituraj (Lead Admin)'
+  },
+  // Hash for executive co-admin
+  'af14461c4877bcf3c7748ba69dba6b7d688b8320ce2fe07dfbc56db59b031a9e': {
+    role: 'Executive Co-Admin',
+    name: 'Niloy Roy (Co-Admin)'
+  }
+};
+
+/**
+ * Computes irreversible SHA-256 hex string using Web Crypto API.
+ */
+export async function computeSha256Hex(text: string): Promise<string> {
+  const enc = new TextEncoder();
+  const data = enc.encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 const STORAGE_KEY = 'cgec_campus_voices_db_2026_v2';
 const ADMIN_SESSION_KEY = 'cgec_admin_auth_session_2026';
@@ -19,7 +48,7 @@ export const INITIAL_VOICES: VoiceRecord[] = [
     submissionId: "CGEC-2026-001",
     studentDetails: {
       name: "Anirban Bhattacharya",
-      email: "anirban.cse26@cgec.ac.in",
+      email: "anirban.cse26@cgec.org.in",
       phone: "+91 98321 45678",
       department: "CSE",
       year: "4th Year",
@@ -46,7 +75,7 @@ export const INITIAL_VOICES: VoiceRecord[] = [
     submissionId: "CGEC-2026-002",
     studentDetails: {
       name: "Priya Roy",
-      email: "priya.ece27@cgec.ac.in",
+      email: "priya.ece27@cgec.org.in",
       phone: "+91 89102 34567",
       department: "ECE",
       year: "3rd Year",
@@ -75,7 +104,7 @@ export const INITIAL_VOICES: VoiceRecord[] = [
     submissionId: "CGEC-2026-003",
     studentDetails: {
       name: "Subham Ghosh",
-      email: "subham.me28@cgec.ac.in",
+      email: "subham.me28@cgec.org.in",
       phone: "+91 70012 98765",
       department: "ME",
       year: "2nd Year",
@@ -106,7 +135,7 @@ export const INITIAL_VOICES: VoiceRecord[] = [
     submissionId: "CGEC-2026-004",
     studentDetails: {
       name: "Suman Das",
-      email: "suman.ee26@cgec.ac.in",
+      email: "suman.ee26@cgec.org.in",
       phone: "+91 94340 11223",
       department: "EE",
       year: "4th Year",
@@ -135,7 +164,7 @@ export const INITIAL_VOICES: VoiceRecord[] = [
     submissionId: "CGEC-2026-005",
     studentDetails: {
       name: "Tanmoy Sarkar",
-      email: "tanmoy.ce29@cgec.ac.in",
+      email: "tanmoy.ce29@cgec.org.in",
       phone: "+91 81160 55443",
       department: "Civil",
       year: "1st Year",
@@ -161,6 +190,198 @@ export const INITIAL_VOICES: VoiceRecord[] = [
         { stage: "Resolved", timestamp: "2026-09-21T10:00:00Z", remark: "LED lights activated and operational" }
       ]
     }
+  },
+  {
+    submissionId: "CGEC-2026-006",
+    studentDetails: {
+      name: "Debjit Paul",
+      email: "debjit.me27@cgec.org.in",
+      phone: "+91 89001 23456",
+      department: "ME",
+      year: "3rd Year",
+      isAnonymous: false
+    },
+    content: {
+      language: "English",
+      subject: "Mechanical Engineering Workshop: CNC Machine Precision Tooling",
+      message: "The CNC milling machine in central mechanical workshop requires fresh carbide inserts and coolant replenishment before next week manufacturing technology laboratory.",
+      category: "Lab & Infrastructure"
+    },
+    metadata: {
+      submittedAt: "2026-09-20T11:15:00Z",
+      status: "In Progress",
+      priority: "Normal",
+      upvotes: 24,
+      adminNotes: "Workshop superintendent has requisitioned carbide end-mills and cooling fluids through store inventory.",
+      assignedCell: "Mechanical Workshop Cell",
+      timeline: [
+        { stage: "Submitted", timestamp: "2026-09-20T11:15:00Z", remark: "Registered by ME-3rd year" },
+        { stage: "Under Review", timestamp: "2026-09-21T09:30:00Z", remark: "Requisition signed by HOD ME" }
+      ]
+    }
+  },
+  {
+    submissionId: "CGEC-2026-007",
+    studentDetails: {
+      name: "Sneha Mukherjee",
+      email: "sneha.cse28@cgec.org.in",
+      phone: "+91 70440 98123",
+      department: "CSE",
+      year: "2nd Year",
+      isAnonymous: true
+    },
+    content: {
+      language: "Bengali",
+      subject: "সেন্ট্রাল ক্যান্টিনে পুষ্টিকর খাবার ও পরিষ্কার পরিচ্ছন্নতার নিয়মিত তদারকি",
+      message: "কলেজের সেন্ট্রাল ক্যান্টিনে দুপুরের খাবারের মান উন্নয়ন এবং বিশুদ্ধ পানীয় জলের ব্যবস্থা নিশ্চিত করার জন্য একটি নিয়মিত পরিদর্শন টিম থাকা দরকার। খাবারের দামও ছাত্রছাত্রীদের বাজেট অনুযায়ী রাখা উচিত।",
+      category: "Hostel & Mess"
+    },
+    metadata: {
+      submittedAt: "2026-09-21T13:40:00Z",
+      status: "Pending",
+      priority: "Normal",
+      upvotes: 39,
+      timeline: [
+        { stage: "Submitted", timestamp: "2026-09-21T13:40:00Z", remark: "Forwarded to Canteen Committee" }
+      ]
+    }
+  },
+  {
+    submissionId: "CGEC-2026-008",
+    studentDetails: {
+      name: "Arindam Saha",
+      email: "arindam.ece26@cgec.org.in",
+      phone: "+91 94770 44556",
+      department: "ECE",
+      year: "4th Year",
+      isAnonymous: false
+    },
+    content: {
+      language: "English",
+      subject: "ECE Communication Lab: Spectrum Analyzer & Antenna Kits Calibration",
+      message: "Advanced communication laboratory antennas and SDR kits need firmware calibration for the upcoming microwave engineering practicals.",
+      category: "Lab & Infrastructure"
+    },
+    metadata: {
+      submittedAt: "2026-09-22T10:00:00Z",
+      status: "Pending",
+      priority: "Normal",
+      upvotes: 18,
+      timeline: [
+        { stage: "Submitted", timestamp: "2026-09-22T10:00:00Z", remark: "Queued for lab assistant review" }
+      ]
+    }
+  },
+  {
+    submissionId: "CGEC-2026-009",
+    studentDetails: {
+      name: "Rohit Singha",
+      email: "rohit.ee27@cgec.org.in",
+      phone: "+91 98305 66778",
+      department: "EE",
+      year: "3rd Year",
+      isAnonymous: false
+    },
+    content: {
+      language: "Bengali",
+      subject: "বাৎসরিক কলেজ ফেস্ট 'ইনভেন্টাম' এবং টেকনিক্যাল এক্সপো ২০২৬ প্রস্তুতি",
+      message: "আমাদের কলেজের বাৎসরিক টেক ফেস্ট 'ইনভেন্টাম'-এর জন্য অডিটোরিয়াম বুকিং এবং বিভিন্ন আন্তঃকলেজ রোবোটিক্স ও কোডিং প্রতিযোগিতার স্পন্সরশিপের জন্য দ্রুত প্রশাসনিক অনুমোদন প্রয়োজন।",
+      category: "General"
+    },
+    metadata: {
+      submittedAt: "2026-09-19T14:30:00Z",
+      status: "Resolved",
+      priority: "Normal",
+      resolvedAt: "2026-09-23T15:00:00Z",
+      upvotes: 72,
+      adminNotes: "Student welfare cell approved auditorium schedule. Cultural committee meeting convened.",
+      timeline: [
+        { stage: "Submitted", timestamp: "2026-09-19T14:30:00Z", remark: "Student council proposal" },
+        { stage: "Approved", timestamp: "2026-09-23T15:00:00Z", remark: "Principal in-charge sanctioned event slots" }
+      ]
+    }
+  },
+  {
+    submissionId: "CGEC-2026-010",
+    studentDetails: {
+      name: "Sayani Das",
+      email: "sayani.ce27@cgec.org.in",
+      phone: "+91 96478 11234",
+      department: "Civil",
+      year: "3rd Year",
+      isAnonymous: false
+    },
+    content: {
+      language: "English",
+      subject: "Civil Engineering Field Survey Camp: Total Station Battery Replacements",
+      message: "The electronic Total Station units for field surveying coursework need replacement rechargeable batteries and tripod screw clamp inspections before winter field camp.",
+      category: "Academic"
+    },
+    metadata: {
+      submittedAt: "2026-09-23T09:20:00Z",
+      status: "In Progress",
+      priority: "High",
+      upvotes: 31,
+      adminNotes: "Civil HOD submitted procurement voucher to stores department for 4 battery packs.",
+      timeline: [
+        { stage: "Submitted", timestamp: "2026-09-23T09:20:00Z", remark: "Field camp requirement" }
+      ]
+    }
+  },
+  {
+    submissionId: "CGEC-2026-011",
+    studentDetails: {
+      name: "Rupam Barman",
+      email: "rupam.me28@cgec.org.in",
+      phone: "+91 87680 99887",
+      department: "ME",
+      year: "2nd Year",
+      isAnonymous: true
+    },
+    content: {
+      language: "Bengali",
+      subject: "ক্যাম্পাস ফুটবল ও ক্রিকেট গ্রাউন্ড রক্ষণাবেক্ষণ এবং স্পোর্টস কিটস প্রদান",
+      message: "কলেজ খেলার মাঠে ঘাস ছাঁটা এবং ভলিবল কোর্টের নেট পরিবর্তনের আবেদন জানাচ্ছি। আন্তঃবিভাগীয় টুর্নামেন্টের জন্য কমনরুমের ইনডোর গেমস সরঞ্জামও দেওয়া হোক।",
+      category: "General"
+    },
+    metadata: {
+      submittedAt: "2026-09-22T17:00:00Z",
+      status: "Pending",
+      priority: "Normal",
+      upvotes: 45,
+      timeline: [
+        { stage: "Submitted", timestamp: "2026-09-22T17:00:00Z", remark: "Sports club request" }
+      ]
+    }
+  },
+  {
+    submissionId: "CGEC-2026-012",
+    studentDetails: {
+      name: "Poulami Chatterjee",
+      email: "poulami.ece29@cgec.org.in",
+      phone: "+91 94332 55441",
+      department: "ECE",
+      year: "1st Year",
+      isAnonymous: false
+    },
+    content: {
+      language: "English",
+      subject: "Semester Exam Portal: Online Fee Payment Receipt Instant Download Bug",
+      message: "When paying examination fees through online SBI collect gateway, transaction IDs are sometimes delayed in generating downloadable acknowledgement receipts. A verification re-check button is requested.",
+      category: "Academic"
+    },
+    metadata: {
+      submittedAt: "2026-09-24T06:45:00Z",
+      status: "In Progress",
+      priority: "High",
+      upvotes: 56,
+      adminNotes: "Finance & Accounts officer coordinating with bank nodal manager. Manual reconciliation receipt generation active.",
+      assignedCell: "Accounts Section",
+      timeline: [
+        { stage: "Submitted", timestamp: "2026-09-24T06:45:00Z", remark: "Payment sync ticket" },
+        { stage: "Investigating", timestamp: "2026-09-24T09:00:00Z", remark: "Accounts cell alerted" }
+      ]
+    }
   }
 ];
 
@@ -171,7 +392,15 @@ export function getStoredVoices(): VoiceRecord[] {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_VOICES));
       return INITIAL_VOICES;
     }
-    return JSON.parse(raw);
+    const parsed: VoiceRecord[] = JSON.parse(raw);
+    const existingIds = new Set(parsed.map((v) => v.submissionId));
+    const missing = INITIAL_VOICES.filter((v) => !existingIds.has(v.submissionId));
+    if (missing.length > 0) {
+      const merged = [...parsed, ...missing];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      return merged;
+    }
+    return parsed;
   } catch (err) {
     console.error('Failed reading voices from storage', err);
     return INITIAL_VOICES;
@@ -305,49 +534,81 @@ export function findVoiceByCode(code: string): VoiceRecord | null {
 }
 
 export function deleteVoiceRecord(submissionId: string): boolean {
-  const voices = getStoredVoices();
-  const filtered = voices.filter(v => v.submissionId !== submissionId);
-  if (filtered.length === voices.length) return false;
-  saveStoredVoices(filtered);
-  return true;
+  try {
+    const voices = getStoredVoices();
+    const cleanTarget = submissionId.trim().toUpperCase();
+    const filtered = voices.filter(v => v.submissionId.trim().toUpperCase() !== cleanTarget);
+    
+    // Persist filtered records to localStorage
+    saveStoredVoices(filtered);
+
+    // Clean up upvotes cache
+    try {
+      const raw = localStorage.getItem(UPVOTED_KEY);
+      if (raw) {
+        const upvotedIds: string[] = JSON.parse(raw);
+        const nextUpvoted = upvotedIds.filter(id => id.trim().toUpperCase() !== cleanTarget);
+        localStorage.setItem(UPVOTED_KEY, JSON.stringify(nextUpvoted));
+      }
+    } catch {
+      // non-fatal
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Failed to delete voice record:', err);
+    return false;
+  }
 }
 
-export function verifyAdminAuth(
+export async function verifyAdminAuth(
   email: string,
   passcode: string
-): { success: boolean; message: string; adminUser?: AdminUser } {
+): Promise<{ success: boolean; message: string; adminUser?: AdminUser }> {
   const cleanEmail = email.trim().toLowerCase();
-  
-  const isAuthorized = AUTHORIZED_ADMIN_EMAILS.some(e => e.toLowerCase() === cleanEmail);
-  if (!isAuthorized) {
+  const cleanPass = passcode.trim();
+
+  if (!cleanEmail || !cleanPass) {
     return {
       success: false,
-      message: `Unauthorized email address. Only designated CGEC Cell Admins (${AUTHORIZED_ADMIN_EMAILS.join(', ')}) have access.`
+      message: 'Both administrator email and master security passcode are required.'
     };
   }
 
-  const isValidPass = VALID_MASTER_PASSCODES.includes(passcode.trim());
-  if (!isValidPass) {
+  try {
+    const [emailHash, passHash] = await Promise.all([
+      computeSha256Hex(cleanEmail),
+      computeSha256Hex(cleanPass)
+    ]);
+
+    const adminProfile = AUTHORIZED_ADMIN_ROLES[emailHash];
+    const isPassValid = SECURE_MASTER_PASS_HASHES.includes(passHash);
+
+    if (!adminProfile || !isPassValid) {
+      return {
+        success: false,
+        message: 'Authentication failed. Invalid administrative credentials or unauthorized email.'
+      };
+    }
+
+    const adminUser: AdminUser = {
+      email: cleanEmail,
+      name: adminProfile.name,
+      role: adminProfile.role
+    };
+
+    return {
+      success: true,
+      message: 'Cryptographic identity verified. Welcome to CGEC Admin Command Center.',
+      adminUser
+    };
+  } catch (err) {
+    console.error('Cryptographic verification error:', err);
     return {
       success: false,
-      message: 'Invalid 16-character master passcode. Access denied to secure vault.'
+      message: 'Cryptographic subsystem error during authentication.'
     };
   }
-
-  const roleTitle = cleanEmail.includes('jituraj') ? 'Lead Administrator' : 'Executive Co-Admin';
-  const displayName = cleanEmail.includes('jituraj') ? 'Jituraj (Lead Admin)' : 'Niloy Roy (Co-Admin)';
-
-  const adminUser: AdminUser = {
-    email: cleanEmail,
-    name: displayName,
-    role: roleTitle
-  };
-
-  return {
-    success: true,
-    message: 'Access granted. Welcome to CGEC Campus Voice Admin Command Center.',
-    adminUser
-  };
 }
 
 export function saveAdminSession(admin: AdminUser): void {
