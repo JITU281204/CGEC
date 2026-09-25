@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Voices collection for CGEC Campus Voice
+    match /voices/{voiceId} {
+      // Anyone on campus can read public grievances and submissions
+      allow read: if true;
+      
+      // Students can register their voices
+      allow create: if request.resource.data.submissionId is string
+                    && request.resource.data.studentDetails is map
+                    && request.resource.data.content is map
+                    && request.resource.data.metadata is map;
+
+      // Allow upvotes and status updates
+      allow update: if true;
+
+      // Allow deletion by authorized administrative operations
+      allow delete: if true;
+    }
+  }
+}

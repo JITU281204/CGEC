@@ -12,7 +12,7 @@ import { ToastContainer, ToastMessage } from './components/Toast';
 import { Footer } from './components/Footer';
 
 import { VoiceRecord, AdminUser } from './types';
-import { getStoredVoices, getAdminSession, clearAdminSession, deleteVoiceRecord } from './utils/storage';
+import { getStoredVoices, getAdminSession, clearAdminSession, deleteVoiceRecord, subscribeToVoices } from './utils/storage';
 import { AppLanguage, getInitialLanguage, saveSelectedLanguage } from './utils/translations';
 
 export default function App() {
@@ -50,6 +50,11 @@ export default function App() {
       setAdminUser(existing);
     }
 
+    // Subscribe to real-time Firebase Firestore updates (cgec-campus-voice)
+    const unsubscribeVoices = subscribeToVoices((updatedVoices) => {
+      setVoices(updatedVoices);
+    });
+
     // Discreet keyboard shortcut for authorized administrators: Alt + A or Ctrl + Shift + A
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.altKey && (e.key === 'a' || e.key === 'A')) ||
@@ -60,7 +65,10 @@ export default function App() {
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      unsubscribeVoices();
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleToggleLang = () => {

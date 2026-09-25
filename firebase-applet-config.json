@@ -1,0 +1,12 @@
+{
+  "projectId": "cgec-campus-voice",
+  "appId": "1:116998145258:web:f3a06014c19cd4fe868393",
+  "apiKey": "AIzaSyBiVcybGgpFYNAR99YBae0mER4-0z5SaOs",
+  "authDomain": "cgec-campus-voice.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-cgeccampusvoices-deaa2365-89e6-46b3-a8d7-18277467531f",
+  "storageBucket": "cgec-campus-voice.firebasestorage.app",
+  "messagingSenderId": "116998145258",
+  "measurementId": "",
+  "oAuthClientId": "116998145258-dmo0n28983ko3qbh50i4bfgr8ujjp2ot.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
+}

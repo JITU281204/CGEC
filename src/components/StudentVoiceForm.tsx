@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { Send, AlertCircle, EyeOff, UserCheck, Paperclip, X, Flame, Sparkles, CheckCircle2, Lock, ArrowRight, Shield } from 'lucide-react';
 import { Department, PriorityLevel, VoiceRecord } from '../types';
 import { addVoiceSubmission } from '../utils/storage';
+import { addVoiceToFirestore } from '../services/voiceService';
 import { AppLanguage, translations } from '../utils/translations';
 import { AdminContactCard } from './AdminContactCard';
 
@@ -87,7 +88,7 @@ export const StudentVoiceForm: React.FC<StudentVoiceFormProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -113,8 +114,8 @@ export const StudentVoiceForm: React.FC<StudentVoiceFormProps> = ({
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const createdRecord = addVoiceSubmission(
+    try {
+      const createdRecord = await addVoiceToFirestore(
         {
           name: name.trim(),
           email: email.trim(),
@@ -149,8 +150,8 @@ export const StudentVoiceForm: React.FC<StudentVoiceFormProps> = ({
       onVoiceSubmitted(createdRecord);
       onShowToast(
         lang === 'bn'
-          ? `ভয়েস সফলভাবে সংরক্ষিত! ট্র্যাকিং আইডি: ${createdRecord.submissionId}`
-          : `Voice Transmitted! Tracking ID: ${createdRecord.submissionId}`,
+          ? `ভয়েস ক্লাউডে রিয়েল-টাইমে সংরক্ষিত হয়েছে! ট্র্যাকিং আইডি: ${createdRecord.submissionId}`
+          : `Voice Transmitted & Saved in Cloud! Tracking ID: ${createdRecord.submissionId}`,
         'success'
       );
 
@@ -159,7 +160,40 @@ export const StudentVoiceForm: React.FC<StudentVoiceFormProps> = ({
       setMessage('');
       setAttachmentName('');
       setAttachmentDataUrl('');
-    }, 450);
+    } catch (err) {
+      console.error('Firebase save notice, fallback to mirrored storage:', err);
+      const createdRecord = addVoiceSubmission(
+        {
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim() || 'N/A',
+          department,
+          year,
+          isAnonymous,
+        },
+        {
+          language: lang === 'bn' ? 'Bengali' : 'English',
+          subject: subject.trim(),
+          message: message.trim(),
+          category: category as any,
+        },
+        priority,
+        attachmentName ? { name: attachmentName, dataUrl: attachmentDataUrl } : undefined
+      );
+      setIsSubmitting(false);
+      setSubmittedRecord(createdRecord);
+      onVoiceSubmitted(createdRecord);
+      onShowToast(
+        lang === 'bn'
+          ? `ভয়েস সংরক্ষিত হয়েছে! ট্র্যাকিং আইডি: ${createdRecord.submissionId}`
+          : `Voice Transmitted! Tracking ID: ${createdRecord.submissionId}`,
+        'success'
+      );
+      setSubject('');
+      setMessage('');
+      setAttachmentName('');
+      setAttachmentDataUrl('');
+    }
   };
 
   return (

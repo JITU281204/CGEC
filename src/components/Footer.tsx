@@ -70,10 +70,15 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdminLogin }) => {
           </div>
         </div>
 
-        {/* Bottom copyright line */}
+        {/* Bottom copyright line with Cloud DB status */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 pt-2 border-t border-slate-900">
-          <div>
-            <span className="font-bold text-slate-200">CGEC Campus Voice System</span> &copy; 2026. All rights reserved.
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-bold text-slate-200">CGEC Campus Voice System</span> &copy; 2026.
+            <span className="hidden sm:inline text-slate-600">•</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Firebase Live: cgec-campus-voice</span>
+            </span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2.5 text-[11px]">

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { VoiceRecord, AdminUser, VoiceStatus, PriorityLevel } from '../types';
 import { exportVoicesCSV, exportVoicesJSON, updateVoiceStatusAndNotes, deleteVoiceRecord } from '../utils/storage';
+import { updateVoiceInFirestore, deleteVoiceFromFirestore } from '../services/voiceService';
 import { AdminCharts } from './AdminCharts';
 import { AppLanguage, translations } from '../utils/translations';
 
@@ -94,12 +95,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setModalCell(voice.metadata.assignedCell || '');
   };
 
-  const handleSaveModal = (e: React.FormEvent) => {
+  const handleSaveModal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingVoice) return;
     setIsSaving(true);
 
-    setTimeout(() => {
+    try {
+      await updateVoiceInFirestore(
+        editingVoice.submissionId,
+        modalStatus,
+        modalNotes,
+        modalCell,
+        modalPriority
+      );
       updateVoiceStatusAndNotes(
         editingVoice.submissionId,
         modalStatus,
@@ -110,8 +118,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setIsSaving(false);
       setEditingVoice(null);
       onVoicesUpdated();
-      onShowToast(`Updated #${editingVoice.submissionId} with administrative action log!`, 'success');
-    }, 400);
+      onShowToast(`Updated #${editingVoice.submissionId} in Cloud Firestore!`, 'success');
+    } catch (err) {
+      console.error('Firestore status update notice:', err);
+      updateVoiceStatusAndNotes(
+        editingVoice.submissionId,
+        modalStatus,
+        modalNotes,
+        modalCell,
+        modalPriority
+      );
+      setIsSaving(false);
+      setEditingVoice(null);
+      onVoicesUpdated();
+      onShowToast(`Updated #${editingVoice.submissionId} locally.`, 'info');
+    }
   };
 
   // Deletion Modal state
@@ -122,20 +143,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setVoiceToDelete(voice);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!voiceToDelete) return;
     setIsDeleting(true);
     const targetId = voiceToDelete.submissionId;
-    const ok = deleteVoiceRecord(targetId);
 
-    if (ok) {
+    try {
+      await deleteVoiceFromFirestore(targetId);
+      deleteVoiceRecord(targetId);
       onVoicesUpdated();
-      onShowToast(`Record #${targetId} has been permanently deleted from vault.`, 'error');
+      onShowToast(`Record #${targetId} permanently deleted from Cloud Firestore.`, 'error');
       if (editingVoice?.submissionId === targetId) {
         setEditingVoice(null);
       }
-    } else {
-      onShowToast(`Failed to delete record #${targetId}.`, 'error');
+    } catch (err) {
+      console.error('Firestore delete notice:', err);
+      const ok = deleteVoiceRecord(targetId);
+      if (ok) {
+        onVoicesUpdated();
+        onShowToast(`Record #${targetId} deleted from local vault.`, 'info');
+        if (editingVoice?.submissionId === targetId) {
+          setEditingVoice(null);
+        }
+      }
     }
 
     setIsDeleting(false);

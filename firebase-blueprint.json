@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "voices": {
+      "title": "Campus Voices",
+      "description": "Student grievances, feedback, and campus improvement proposals for CGEC",
+      "type": "object",
+      "properties": {
+        "submissionId": {
+          "type": "string",
+          "description": "Unique identifier formatted as CGEC-YYYY-XXX"
+        },
+        "studentDetails": {
+          "type": "object",
+          "description": "Details of the submitting student",
+          "properties": {
+            "name": { "type": "string" },
+            "email": { "type": "string" },
+            "phone": { "type": "string" },
+            "department": { "type": "string" },
+            "year": { "type": "string" },
+            "isAnonymous": { "type": "boolean" }
+          },
+          "required": ["name", "email", "department", "year"]
+        },
+        "content": {
+          "type": "object",
+          "description": "Voice grievance content and category",
+          "properties": {
+            "language": { "type": "string" },
+            "subject": { "type": "string" },
+            "message": { "type": "string" },
+            "category": { "type": "string" }
+          },
+          "required": ["language", "subject", "message"]
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Administrative status, upvotes and audit timeline",
+          "properties": {
+            "submittedAt": { "type": "string" },
+            "status": { "type": "string" },
+            "priority": { "type": "string" },
+            "adminNotes": { "type": "string" },
+            "resolvedAt": { "type": "string" },
+            "assignedCell": { "type": "string" },
+            "upvotes": { "type": "number" },
+            "timeline": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "stage": { "type": "string" },
+                  "timestamp": { "type": "string" },
+                  "remark": { "type": "string" }
+                }
+              }
+            }
+          },
+          "required": ["submittedAt", "status"]
+        },
+        "attachmentName": {
+          "type": "string"
+        },
+        "attachmentDataUrl": {
+          "type": "string"
+        }
+      },
+      "required": ["submissionId", "studentDetails", "content", "metadata"]
+    }
+  },
+  "firestore": {
+    "collections": {
+      "voices": {
+        "schema": "voices",
+        "description": "Central collection storing all student grievances and campus voice submissions"
+      }
+    }
+  }
+}

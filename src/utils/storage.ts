@@ -1,4 +1,13 @@
 import { VoiceRecord, AdminUser, VoiceStatus, PriorityLevel } from '../types';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  onSnapshot, 
+  writeBatch 
+} from 'firebase/firestore';
+import { db, projectId } from '../lib/firebase';
 
 // One-Way Irreversible SHA-256 Cryptographic Hashes for Admin Vault Access
 // Plaintext emails and passcodes are never stored or exposed in application code.
@@ -385,6 +394,54 @@ export const INITIAL_VOICES: VoiceRecord[] = [
   }
 ];
 
+function sanitizeForFirestore(record: VoiceRecord): Record<string, any> {
+  const clean: any = {
+    submissionId: record.submissionId,
+    studentDetails: {
+      name: record.studentDetails.name || '',
+      email: record.studentDetails.email || '',
+      phone: record.studentDetails.phone || '',
+      department: record.studentDetails.department || 'General',
+      year: record.studentDetails.year || '1st Year',
+      isAnonymous: Boolean(record.studentDetails.isAnonymous)
+    },
+    content: {
+      language: record.content.language || 'English',
+      subject: record.content.subject || '',
+      message: record.content.message || '',
+      category: record.content.category || 'General'
+    },
+    metadata: {
+      submittedAt: record.metadata.submittedAt || new Date().toISOString(),
+      status: record.metadata.status || 'Pending',
+      priority: record.metadata.priority || 'Normal',
+      upvotes: Number(record.metadata.upvotes || 0),
+      adminNotes: record.metadata.adminNotes || '',
+      assignedCell: record.metadata.assignedCell || '',
+      timeline: record.metadata.timeline || []
+    }
+  };
+
+  if (record.metadata.resolvedAt) {
+    clean.metadata.resolvedAt = record.metadata.resolvedAt;
+  }
+
+  if (record.attachmentName) {
+    clean.attachmentName = record.attachmentName;
+  }
+
+  // Safeguard against Firestore 1MB doc ceiling
+  if (record.attachmentDataUrl) {
+    if (record.attachmentDataUrl.length < 750000) {
+      clean.attachmentDataUrl = record.attachmentDataUrl;
+    } else {
+      clean.attachmentDataUrl = record.attachmentDataUrl.slice(0, 1000) + '...[truncated for cloud quota]';
+    }
+  }
+
+  return clean;
+}
+
 export function getStoredVoices(): VoiceRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -412,6 +469,72 @@ export function saveStoredVoices(voices: VoiceRecord[]): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(voices));
   } catch (err) {
     console.error('Failed writing voices to storage', err);
+  }
+}
+
+/**
+ * Real-time synchronization subscriber with Firebase Firestore.
+ * Automatically seeds the cgec-campus-voice database if empty.
+ */
+export function subscribeToVoices(
+  onUpdate: (voices: VoiceRecord[]) => void,
+  onError?: (err: unknown) => void
+): () => void {
+  try {
+    const voicesCol = collection(db, 'voices');
+
+    const unsubscribe = onSnapshot(
+      voicesCol,
+      async (snapshot) => {
+        if (snapshot.empty) {
+          console.log('[Firestore] Database cgec-campus-voice is empty. Seeding initial records...');
+          try {
+            const batch = writeBatch(db);
+            const current = getStoredVoices();
+            current.forEach((v) => {
+              const docRef = doc(db, 'voices', v.submissionId);
+              batch.set(docRef, sanitizeForFirestore(v));
+            });
+            await batch.commit();
+            console.log('[Firestore] Seeded initial campus voices successfully.');
+          } catch (seedErr) {
+            console.warn('[Firestore] Auto-seed warning:', seedErr);
+          }
+          onUpdate(getStoredVoices());
+          return;
+        }
+
+        const remoteVoices: VoiceRecord[] = [];
+        snapshot.forEach((snap) => {
+          const data = snap.data() as VoiceRecord;
+          if (data && data.submissionId) {
+            remoteVoices.push(data);
+          }
+        });
+
+        // Order descending by submission time
+        remoteVoices.sort((a, b) => {
+          const timeA = new Date(a.metadata?.submittedAt || 0).getTime();
+          const timeB = new Date(b.metadata?.submittedAt || 0).getTime();
+          return timeB - timeA;
+        });
+
+        // Mirror to localStorage for offline resilience
+        saveStoredVoices(remoteVoices);
+        onUpdate(remoteVoices);
+      },
+      (err) => {
+        console.warn('[Firestore] Snapshot listener warning:', err);
+        onError?.(err);
+        onUpdate(getStoredVoices());
+      }
+    );
+
+    return unsubscribe;
+  } catch (err) {
+    console.warn('[Firestore] Subscriber failed to initialize:', err);
+    onUpdate(getStoredVoices());
+    return () => {};
   }
 }
 
@@ -444,6 +567,18 @@ export function addVoiceSubmission(
 
   const updated = [newRecord, ...currentVoices];
   saveStoredVoices(updated);
+
+  // Asynchronously synchronize with Firestore
+  (async () => {
+    try {
+      const docRef = doc(db, 'voices', submissionId);
+      await setDoc(docRef, sanitizeForFirestore(newRecord));
+      console.log(`[Firestore] Saved new submission ${submissionId}`);
+    } catch (err) {
+      console.warn(`[Firestore] Sync error for new submission:`, err);
+    }
+  })();
+
   return newRecord;
 }
 
@@ -469,7 +604,7 @@ export function updateVoiceStatusAndNotes(
     });
   }
 
-  voices[idx] = {
+  const updatedRecord: VoiceRecord = {
     ...voices[idx],
     metadata: {
       ...voices[idx].metadata,
@@ -482,8 +617,21 @@ export function updateVoiceStatusAndNotes(
     }
   };
 
+  voices[idx] = updatedRecord;
   saveStoredVoices(voices);
-  return voices[idx];
+
+  // Sync with Firestore
+  (async () => {
+    try {
+      const docRef = doc(db, 'voices', submissionId);
+      await setDoc(docRef, sanitizeForFirestore(updatedRecord), { merge: true });
+      console.log(`[Firestore] Updated status for ${submissionId}`);
+    } catch (err) {
+      console.warn(`[Firestore] Update error:`, err);
+    }
+  })();
+
+  return updatedRecord;
 }
 
 export function upvoteVoice(submissionId: string): { success: boolean; newCount: number } {
@@ -499,21 +647,33 @@ export function upvoteVoice(submissionId: string): { success: boolean; newCount:
     upvotedIds = [];
   }
 
+  let newCount = voices[idx].metadata.upvotes || 0;
   if (upvotedIds.includes(submissionId)) {
     // Un-vote
-    voices[idx].metadata.upvotes = Math.max(0, (voices[idx].metadata.upvotes || 1) - 1);
+    newCount = Math.max(0, newCount - 1);
+    voices[idx].metadata.upvotes = newCount;
     upvotedIds = upvotedIds.filter(id => id !== submissionId);
-    localStorage.setItem(UPVOTED_KEY, JSON.stringify(upvotedIds));
-    saveStoredVoices(voices);
-    return { success: true, newCount: voices[idx].metadata.upvotes || 0 };
   } else {
     // Upvote
-    voices[idx].metadata.upvotes = (voices[idx].metadata.upvotes || 0) + 1;
+    newCount = newCount + 1;
+    voices[idx].metadata.upvotes = newCount;
     upvotedIds.push(submissionId);
-    localStorage.setItem(UPVOTED_KEY, JSON.stringify(upvotedIds));
-    saveStoredVoices(voices);
-    return { success: true, newCount: voices[idx].metadata.upvotes || 1 };
   }
+
+  localStorage.setItem(UPVOTED_KEY, JSON.stringify(upvotedIds));
+  saveStoredVoices(voices);
+
+  // Sync with Firestore
+  (async () => {
+    try {
+      const docRef = doc(db, 'voices', submissionId);
+      await setDoc(docRef, { metadata: { upvotes: newCount } }, { merge: true });
+    } catch (err) {
+      console.warn(`[Firestore] Upvote sync error:`, err);
+    }
+  })();
+
+  return { success: true, newCount };
 }
 
 export function isVoiceUpvotedByUser(submissionId: string): boolean {
@@ -553,6 +713,17 @@ export function deleteVoiceRecord(submissionId: string): boolean {
     } catch {
       // non-fatal
     }
+
+    // Sync deletion to Firestore
+    (async () => {
+      try {
+        const docRef = doc(db, 'voices', cleanTarget);
+        await deleteDoc(docRef);
+        console.log(`[Firestore] Deleted ${cleanTarget}`);
+      } catch (err) {
+        console.warn(`[Firestore] Delete error:`, err);
+      }
+    })();
 
     return true;
   } catch (err) {
@@ -631,6 +802,13 @@ export function getAdminSession(): AdminUser | null {
 
 export function clearAdminSession(): void {
   sessionStorage.removeItem(ADMIN_SESSION_KEY);
+}
+
+export function getFirebaseProjectInfo() {
+  return {
+    projectId,
+    status: 'connected' as const
+  };
 }
 
 // Export utilities
